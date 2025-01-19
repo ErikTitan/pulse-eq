@@ -1,35 +1,45 @@
-# web-eq
+# WEB-EQ
 
-This template should help get you started developing with Vue 3 in Vite.
+A powerful web-based equalizer that empowers users to create, customize, and share audio presets for enhancing their listening experience across gaming, music, and general audio playback.
 
-## Recommended IDE Setup
+## Overview
 
-[VSCode](https://code.visualstudio.com/) + [Volar](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
+WEB-EQ is designed to help users optimize their audio experience through custom equalizer presets. Whether you're looking to enhance gaming audio, fix headphone tuning, or create perfect EQ settings for different music genres, WEB-EQ provides an intuitive interface for precise audio control.
 
-## Customize configuration
+## Key Features
 
-See [Vite Configuration Reference](https://vite.dev/config/).
+- Create and customize detailed equalizer presets
+- Export your presets to share with the community
+- Import presets from other users
+- Real-time audio preview while adjusting settings
+- Preset categories for gaming, music genres, and headphone models
+- Community-driven preset library
 
-## Project Setup
+## Applications
 
-```sh
-npm install
-```
+- **Gaming Audio**: Enhance footsteps, directional audio, and overall gaming experience
+- **Headphone Optimization**: Correct frequency response of your headphones
+- **Music Enhancement**: Create and use genre-specific EQ settings
+- **Audio Production**: Develop and share professional audio presets
 
-### Compile and Hot-Reload for Development
+## Technical Stack
 
-```sh
-npm run dev
-```
+- Vue.js 3 (Options API)
+- PrimeVue Components
+- Tailwind CSS
+- Modern web audio processing
 
-### Compile and Minify for Production
+## Getting Started
 
-```sh
-npm run build
-```
+1. Visit web-eq.com
+2. Create an account to access all features
+3. Start creating your first preset or browse the community library
+4. Export and share your creations with others
 
-### Lint with [ESLint](https://eslint.org/)
+## Contributing
 
-```sh
-npm run lint
-```
+We welcome contributions from the audio community! Whether it's sharing presets, suggesting features, or contributing to the codebase, check our contribution guidelines to get started.
+
+## License
+
+This project is licensed under the MIT License. See the LICENSE file for details.

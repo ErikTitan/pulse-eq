@@ -80,7 +80,7 @@ export default {
 
         <div class="mt-8 pt-8 border-t border-gray-200 flex flex-col md:flex-row justify-between items-center">
             <div class="text-sm mb-4 md:mb-0">
-                © 2024 WEB-EQ. All rights reserved.
+                © 2025 Pulse-EQ. All rights reserved.
             </div>
             <div class="flex gap-4">
                 <Button v-for="social in socialIcons" :key="social.icon" :icon="social.icon" text rounded

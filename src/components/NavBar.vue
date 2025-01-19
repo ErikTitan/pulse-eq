@@ -23,18 +23,19 @@ export default {
                 },
                 {
                     label: 'Equalizer',
-                    icon: 'pi pi-fw pi-sliders-h',
+                    icon: 'pi pi-fw pi-wave-pulse ',
                     route: '/equalizer'
                 },
                 {
-                    label: 'Menu',
-                    icon: 'pi pi-fw pi-bars',
-                    items: [
-                        { label: 'Option 1', icon: 'pi pi-fw pi-check' },
-                        { label: 'Option 2', icon: 'pi pi-fw pi-times' },
-                    ],
+                    label: 'Presets',
+                    icon: 'pi pi-sliders-h',
+                    route: '/presets'
                 },
-                { label: 'Contact', icon: 'pi pi-fw pi-envelope' },
+                {
+                    label: 'Contact',
+                    icon: 'pi pi-fw pi-envelope',
+                    route: '/contact'
+                },
             ],
             isDarkMode: false,
             isScrolled: false
@@ -69,7 +70,7 @@ export default {
         'lg:top-3': isScrolled,
         'top-0': !isScrolled
     }">
-        <Menubar :model="items" class="transition-all duration-400 ease-in-out mx-auto overflow-hidden" :class="{
+        <Menubar :model="items" class="transition-all duration-400 ease-in-out mx-auto" :class="{
             'container rounded-lg': isScrolled,
             'w-full max-w-full rounded-none border-none': !isScrolled
         }">
@@ -92,11 +93,6 @@ export default {
                 <a v-else v-ripple class="flex items-center" v-bind="props.action">
                     <i :class="item.icon" />
                     <span class="ml-2">{{ item.label }}</span>
-                    <Badge v-if="item.badge" :class="{ 'ml-auto': !root, 'ml-2': root }" :value="item.badge" />
-                    <span v-if="item.shortcut" class="ml-auto border rounded bg-emphasis text-muted-color text-xs p-1">
-                        {{ item.shortcut }}
-                    </span>
-                    <i v-if="hasSubmenu" :class="['pi pi-angle-down ml-auto']"></i>
                 </a>
             </template>
             <template #end>

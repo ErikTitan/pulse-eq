@@ -1,40 +1,21 @@
 <script>
 import Button from 'primevue/button';
 import Footer from '@/components/FooterComponent.vue';
+import AnimatedGradientHeader from '@/components/AnimatedGradientHeader.vue';
 export default {
   name: 'home',
   components: {
     Button,
     Footer,
+    AnimatedGradientHeader,
   },
 };
 </script>
 
 <template>
-  <div class="flex flex-col pt-24 px-6 lg:px-20 overflow-hidden" style="background: linear-gradient(0deg, 
-            var(--overlay), 
-            var(--overlay)), 
-            radial-gradient(77.36% 256.97% at 77.36% 57.52%, 
-            var(--gradient-start) 10%, 
-            var(--gradient-end) 100%);
-            clip-path: ellipse(133% 75% at 93% 13%)">
-    <div class="mx-6 md:mx-20 mt-0 md:mt-6">
-      <h1 class="text-6xl font-bold text-white leading-tight">
-        <span class="font-light block">Shape Your Sound</span>Perfect Audio For Every Moment
-      </h1>
-      <p class="font-normal text-2xl leading-normal md:mt-4 text-white">
-        Create, share, and discover custom audio equalizer presets. Transform your gaming experience, optimize your
-        headphones, and enhance your music listening with precision controls.
-      </p>
-      <Button as="router-link" label="Create Your First Preset" to="equalizer" severity="primary"
-        class="!text-xl mt-8 !px-4 rounded-full"></Button>
-    </div>
-    <div class="flex justify-center md:justify-end bg-scroll relative top-8">
-      <img src="../assets/images/Peace_image.png" class="md:w-[700px]" />
-    </div>
-  </div>
+  <AnimatedGradientHeader />
 
-  <div class="py-6 px-6 lg:px-20 mx-0 my-12 lg:mx-20">
+  <div class="px-6 lg:px-20 mx-0 my-12 lg:mx-20">
     <div class="text-center">
       <div class="font-normal mb-2 text-4xl" style="color: var(--p-text-hover-color)">Audio
         Excellence Anywhere</div>
