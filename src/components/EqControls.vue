@@ -101,6 +101,25 @@ export default {
             this.showExportDialog = true;
         },
 
+        async copyToClipboard() {
+            try {
+                await navigator.clipboard.writeText(this.exportedSettings);
+                this.$toast.add({
+                    severity: 'success',
+                    summary: 'Copied!',
+                    detail: 'Settings copied to clipboard',
+                    life: 3000
+                });
+            } catch (err) {
+                this.$toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to copy settings',
+                    life: 3000
+                });
+            }
+        },
+
         downloadPreset() {
             try {
                 const exportData = JSON.parse(this.exportedSettings);
