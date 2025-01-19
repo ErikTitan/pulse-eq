@@ -87,7 +87,7 @@ PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers 
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/pulse-eq.git
+git clone https://github.com/ErikTitan/pulse-eq.git
 
 # Install dependencies
 cd pulse-eq
