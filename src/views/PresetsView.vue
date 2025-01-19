@@ -1,10 +1,13 @@
 <script>
 import Card from 'primevue/card'
 import Button from 'primevue/button'
-import Dropdown from 'primevue/dropdown'
+import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import Tag from 'primevue/tag'
 import Badge from 'primevue/badge'
+import Rating from 'primevue/rating';
+import Chart from 'primevue/chart';
+import MultiSelect from 'primevue/multiselect';
 
 
 export default {
@@ -12,10 +15,13 @@ export default {
     components: {
         Card,
         Button,
-        Dropdown,
+        Select,
         InputText,
         Tag,
         Badge,
+        Rating,
+        Chart,
+        MultiSelect,
     },
     props: {
         isDarkMode: {
@@ -120,9 +126,9 @@ export default {
             <!-- Filters Section -->
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                 <InputText v-model="searchQuery" placeholder="Search presets..." class="input" />
-                <Dropdown v-model="selectedCategory" :options="categories" optionLabel="name" placeholder="Category"
+                <Select v-model="selectedCategory" :options="categories" optionLabel="name" placeholder="Category"
                     class="w-full" />
-                <Dropdown v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by"
+                <Select v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by"
                     class="w-full" />
                 <MultiSelect v-model="selectedDevices" :options="devices" placeholder="Compatible devices"
                     class="w-full" />
