@@ -298,15 +298,6 @@ export const useEqualizerStore = defineStore('equalizer', {
       }))
     },
 
-    setupStateListener(weq8Instance) {
-      if (!weq8Instance) return
-
-      weq8Instance.on('filtersChanged', (state) => {
-        console.log('Filter state changed:', state)
-        this.savedState = state
-      })
-    },
-
     updateState(filters) {
       // Save complete filter state including all properties
       const completeState = {

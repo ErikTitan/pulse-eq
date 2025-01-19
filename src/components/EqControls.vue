@@ -55,7 +55,7 @@ export default {
             importedSettings: '',
         }
     },
-    emits: ['update:filters', 'update-filter'],
+    emits: ['update:filters', 'update-filter', 'update-weq8'],
     methods: {
         resetEQ() {
             const defaultFilters = this.equalizerStore.getDefaultFilters();
