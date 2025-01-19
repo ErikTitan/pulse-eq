@@ -65,7 +65,6 @@ PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers 
 - PrimeVue UI Components
 - Tailwind CSS for styling
 - Web Audio API for processing
-- WebAssembly for intensive calculations
 
 ### Key Components
 
@@ -129,9 +128,3 @@ PULSE-EQ is licensed under the MIT License. See the [LICENSE](LICENSE) file for 
 - Thanks to the Web Audio API community
 - Vue.js team for the amazing framework
 - All our contributors and preset creators
-
-## Support
-
-- Documentation: [docs.pulse-eq.com](https://docs.pulse-eq.com)
-- Email: support@pulse-eq.com
-- GitHub Issues: Bug reports and feature requests
