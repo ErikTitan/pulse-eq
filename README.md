@@ -1,45 +1,137 @@
-# WEB-EQ
+# PULSE-EQ
 
-A powerful web-based equalizer that empowers users to create, customize, and share audio presets for enhancing their listening experience across gaming, music, and general audio playback.
+<div align="center">
+  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/equalizer.png" alt="PULSE-EQ Interface" width="800">
+  <p><em>Experience professional-grade audio equalization in your browser</em></p>
+</div>
 
 ## Overview
 
-WEB-EQ is designed to help users optimize their audio experience through custom equalizer presets. Whether you're looking to enhance gaming audio, fix headphone tuning, or create perfect EQ settings for different music genres, WEB-EQ provides an intuitive interface for precise audio control.
+PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers users to create, customize, and share audio presets. Whether you're a gamer seeking perfect directional audio, an audiophile fine-tuning your headphones, or a music enthusiast exploring different genre configurations, PULSE-EQ provides the tools you need for precise audio control.
 
-## Key Features
+<div align="center">
+  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/landing-page.png" alt="PULSE-EQ Landing Page" width="800">
+</div>
 
-- Create and customize detailed equalizer presets
-- Export your presets to share with the community
+## Features
+
+### Advanced Equalization
+
+- 31-band graphic equalizer for precise frequency control
+- Real-time frequency response visualization
+- Parametric EQ capabilities with adjustable Q-factor
+- Built-in spectrum analyzer for accurate audio monitoring
+
+### Preset Management
+
+- Create and save unlimited custom presets
+- Export presets in cross-compatible format
 - Import presets from other users
-- Real-time audio preview while adjusting settings
-- Preset categories for gaming, music genres, and headphone models
-- Community-driven preset library
+- Organize presets with tags and categories
 
-## Applications
+<div align="center">
+  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/presets.png" alt="PULSE-EQ Preset Library" width="800">
+  <p><em>Browse and share presets with the PULSE-EQ community</em></p>
+</div>
 
-- **Gaming Audio**: Enhance footsteps, directional audio, and overall gaming experience
-- **Headphone Optimization**: Correct frequency response of your headphones
-- **Music Enhancement**: Create and use genre-specific EQ settings
-- **Audio Production**: Develop and share professional audio presets
+### Use Cases
 
-## Technical Stack
+#### Gaming Audio Enhancement
+
+- Footstep frequency optimization
+- Directional audio improvement
+- Weapon sound distinction
+- Environmental awareness boost
+
+#### Headphone Optimization
+
+- Frequency response correction
+- Bass enhancement
+- Treble refinement
+- Soundstage improvement
+
+#### Music Genre Optimization
+
+- Genre-specific frequency profiles
+- Bass-focused configurations
+- Vocal clarity enhancement
+- Instrument separation improvement
+
+## Technical Architecture
+
+### Frontend Stack
 
 - Vue.js 3 (Options API)
-- PrimeVue Components
-- Tailwind CSS
-- Modern web audio processing
+- PrimeVue UI Components
+- Tailwind CSS for styling
+- Web Audio API for processing
+- WebAssembly for intensive calculations
+
+### Key Components
+
+- Real-time audio processing engine
+- Visual frequency analyzer
+- Preset management system
+- Community sharing platform
 
 ## Getting Started
 
-1. Visit web-eq.com
-2. Create an account to access all features
-3. Start creating your first preset or browse the community library
-4. Export and share your creations with others
+1. Visit [PULSE-EQ](https://pulse-eq.com)
+2. Create an account or sign in
+3. Choose a starting point:
+   - Create a new preset from scratch
+   - Import an existing preset
+   - Browse community presets
+
+## Installation for Development
+
+```bash
+# Clone the repository
+git clone https://github.com/yourusername/pulse-eq.git
+
+# Install dependencies
+cd pulse-eq
+npm install
+
+# Start development server
+npm run dev
+```
 
 ## Contributing
 
-We welcome contributions from the audio community! Whether it's sharing presets, suggesting features, or contributing to the codebase, check our contribution guidelines to get started.
+We welcome contributions from the audio community! Here's how you can help:
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+### Contribution Guidelines
+
+- Follow the Vue.js style guide
+- Include tests for new features
+- Update documentation as needed
+- Respect the existing code architecture
+
+## Community
+
+- Join our [Discord](https://discord.gg/pulse-eq)
+- Follow us on [Twitter](https://twitter.com/pulse_eq)
+- Share your presets on our [Community Forum](https://community.pulse-eq.com)
 
 ## License
 
-This project is licensed under the MIT License. See the LICENSE file for details.
+PULSE-EQ is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+
+## Acknowledgments
+
+- Thanks to the Web Audio API community
+- Vue.js team for the amazing framework
+- All our contributors and preset creators
+
+## Support
+
+- Documentation: [docs.pulse-eq.com](https://docs.pulse-eq.com)
+- Email: support@pulse-eq.com
+- GitHub Issues: Bug reports and feature requests
