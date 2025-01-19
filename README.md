@@ -11,6 +11,7 @@ PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers 
 
 <div align="center">
   <img src="https://github.com/ErikTitan/web-eq/blob/main/img/landing-page.png" alt="PULSE-EQ Landing Page" width="800">
+  <p><em>PULSE-EQ Landing Page</em></p>
 </div>
 
 ## Features
@@ -34,7 +35,7 @@ PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers 
   <p><em>Browse and share presets with the PULSE-EQ community</em></p>
 </div>
 
-### Use Cases
+## Use Cases
 
 #### Gaming Audio Enhancement
 
