@@ -143,7 +143,7 @@ export default {
                         <template #content>
                             <div class="flex flex-col items-center justify-center">
                                 <div ref="eqContainer"
-                                    class="border w-full h-96 shadow-xl relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
+                                    class="border w-full h-96 relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
                                     style="background-color: var(--eq-background)">
                                     <GridCanvas :nyquist="nyquist" :device-pixel-ratio="devicePixelRatio" />
                                     <AnalyzerCanvas v-if="analyserNode" :analyser-node="analyserNode" :nyquist="nyquist"

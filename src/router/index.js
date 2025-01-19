@@ -4,6 +4,8 @@ import EqualizerView from '../views/EqualizerView.vue'
 import ContactView from '@/views/ContactView.vue'
 import PresetsView from '@/views/PresetsView.vue'
 import NotFound from '@/views/NotFound.vue'
+import Features from '@/views/Features.vue'
+
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes: [
@@ -26,6 +28,11 @@ const router = createRouter({
       path: '/presets',
       name: 'presets',
       component: PresetsView,
+    },
+    {
+      path: '/features',
+      name: 'features',
+      component: Features,
     },
     {
       path: '/:pathMatch(.*)*',

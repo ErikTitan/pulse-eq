@@ -71,7 +71,7 @@ export default {
             var(--gradient-testimonial)">
     <div class="flex flex-col justify-center items-center text-center px-4 py-4 md:py-0">
       <div class="mb-2 text-3xl font-semibold text-color">Andrej Šima</div>
-      <span class="text-2xl" style="color: var(--p-text-color)">Professional War Thunder Player</span>
+      <span class="text-2xl" style="color: var(--p-text-color)">Professional Audio Engineer</span>
       <p class="sm:line-height-2 md:line-height-4 text-2xl mt-6 text-color" style="max-width: 1000px;">
         "PULSE-EQ has revolutionized how I approach audio tuning. The ability to create and share presets instantly has
         made it my go-to tool for quick adjustments during gaming sessions and music production. The precision and ease

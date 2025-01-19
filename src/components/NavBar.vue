@@ -32,10 +32,16 @@ export default {
                     route: '/presets'
                 },
                 {
+                    label: 'Features',
+                    icon: 'pi pi-objects-column',
+                    route: '/features'
+                },
+                {
                     label: 'Contact',
                     icon: 'pi pi-fw pi-envelope',
                     route: '/contact'
                 },
+
             ],
             isDarkMode: false,
             isScrolled: false
