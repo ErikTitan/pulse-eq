@@ -1,13 +1,11 @@
 import './assets/main.css'
 import { createApp } from 'vue'
 import { createPinia } from 'pinia'
-import piniaPluginPersistedstate from 'pinia-plugin-persistedstate'
 import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import { definePreset } from '@primevue/themes'
 import App from './App.vue'
 import router from './router'
-import { Toolbar } from 'primevue'
 import ToastService from 'primevue/toastservice'
 
 import 'primeicons/primeicons.css'
@@ -673,7 +671,6 @@ const MyPreset = definePreset(Aura, {
 
 const app = createApp(App)
 const pinia = createPinia()
-pinia.use(piniaPluginPersistedstate)
 
 app.use(pinia)
 app.use(router)
@@ -692,6 +689,5 @@ app.use(PrimeVue, {
   },
 })
 
-app.component('Toolbar', Toolbar)
 app.directive('ripple', Ripple)
 app.mount('#app')
