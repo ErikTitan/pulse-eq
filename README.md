@@ -1,7 +1,7 @@
 # PULSE-EQ
 
 <div align="center">
-  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/equalizer.png" alt="PULSE-EQ Interface" width="800">
+  <img src="https://github.com/ErikTitan/pulse-eq/blob/main/.github/img/equalizer.png" alt="PULSE-EQ Interface" width="800">
   <p><em>Experience professional-grade audio equalization in your browser</em></p>
 </div>
 
@@ -10,7 +10,7 @@
 PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers users to create, customize, and share audio presets. Whether you're a gamer seeking perfect directional audio, an audiophile fine-tuning your headphones, or a music enthusiast exploring different genre configurations, PULSE-EQ provides the tools you need for precise audio control.
 
 <div align="center">
-  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/landing-page.png" alt="PULSE-EQ Landing Page" width="800">
+  <img src="https://github.com/ErikTitan/pulse-eq/blob/main/.github/img/landing-page.png" alt="PULSE-EQ Landing Page" width="800">
   <p><em>PULSE-EQ Landing Page</em></p>
 </div>
 
@@ -31,7 +31,7 @@ PULSE-EQ is a sophisticated web-based equalizer built with Vue.js that empowers 
 - Organize presets with tags and categories
 
 <div align="center">
-  <img src="https://github.com/ErikTitan/web-eq/blob/main/img/presets.png" alt="PULSE-EQ Preset Library" width="800">
+  <img src="https://github.com/ErikTitan/pulse-eq/blob/main/.github/img/presets.png" alt="PULSE-EQ Preset Library" width="800">
   <p><em>Browse and share presets with the PULSE-EQ community</em></p>
 </div>
 
