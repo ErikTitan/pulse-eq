@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@primevue/themes": "^4.2.2",
+    "axios": "^1.8.4",
     "chart.js": "^4.4.7",
     "pinia": "^2.3.0",
     "pinia-plugin-persistedstate": "^4.1.3",
