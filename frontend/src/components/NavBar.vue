@@ -78,7 +78,7 @@ export default {
     async handleLogout() {
       console.log('Attempting logout');
       try {
-        await apiClient.post('/logout');
+        await apiClient.post('/api/logout');
         this.isAuthenticated = false;
         this.userData = null;
         console.log('Logout successful');
@@ -91,7 +91,7 @@ export default {
     async checkAuthOnMount() {
       console.log("Checking auth status on mount...");
       try {
-        const response = await apiClient.get('/user');
+        const response = await apiClient.get('/api/user');
         if (response.data) {
           this.isAuthenticated = true;
           this.userData = response.data;

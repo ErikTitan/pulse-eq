@@ -85,11 +85,11 @@ export default {
         await apiClient.get('/sanctum/csrf-cookie');
 
         // 2. Attempt login
-        const response = await apiClient.post('/login', this.loginForm);
+        const response = await apiClient.post('/api/login', this.loginForm);
         console.log('Login response:', response);
 
         // 3. Fetch user data after successful login
-        const userResponse = await apiClient.get('/user');
+        const userResponse = await apiClient.get('/api/user');
         console.log('User data:', userResponse.data);
 
         this.$emit('loginSuccess', userResponse.data);
@@ -119,7 +119,7 @@ export default {
         await apiClient.get('/sanctum/csrf-cookie');
 
         // 2. Attempt registration
-        const response = await apiClient.post('/register', this.registerForm);
+        const response = await apiClient.post('/api/register', this.registerForm);
         console.log('Register response:', response.data);
 
         // 3. Automatically log in the user after registration
@@ -139,8 +139,8 @@ export default {
     async handleLoginAfterRegister(email, password) {
       console.log('Attempting login after registration...');
       try {
-        await apiClient.post('/login', { email, password });
-        const userResponse = await apiClient.get('/user');
+        await apiClient.post('/api/login', { email, password });
+        const userResponse = await apiClient.get('/api/user');
         this.$emit('registerSuccess', userResponse.data);
         this.closeDialog();
       } catch (error) {
