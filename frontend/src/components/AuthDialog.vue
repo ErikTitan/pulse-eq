@@ -2,8 +2,8 @@
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import apiClient from '../axios';
 import Message from 'primevue/message';
+import { useAuthStore } from '../stores/authStore';
 
 export default {
   name: 'AuthDialog',
@@ -12,6 +12,10 @@ export default {
     Dialog,
     InputText,
     Message,
+  },
+  setup() {
+    const authStore = useAuthStore();
+    return { authStore };
   },
   props: {
     visible: {
@@ -31,9 +35,15 @@ export default {
       currentMode: this.mode,
       loginForm: { email: '', password: '' },
       registerForm: { name: '', email: '', password: '', password_confirmation: '' },
-      errorMessage: null,
-      isLoading: false,
     };
+  },
+  computed: {
+    errorMessage() {
+      return this.authStore.error;
+    },
+    isLoading() {
+      return this.authStore.isLoading;
+    }
   },
   watch: {
     visible(newValue) {
@@ -61,7 +71,7 @@ export default {
   methods: {
     resetForms() {
       this.loginForm = { email: '', password: '' };
-      this.errorMessage = null;
+      this.authStore.clearError();
       this.registerForm = { name: '', email: '', password: '', password_confirmation: '' };
     },
     closeDialog() {
@@ -76,76 +86,19 @@ export default {
       this.resetForms();
     },
     async handleLogin() {
-      this.isLoading = true;
-      this.errorMessage = null;
-      console.log('Attempting login with:', this.loginForm);
+      const result = await this.authStore.login(this.loginForm);
 
-      try {
-        // 1. Ensure CSRF cookie is set
-        await apiClient.get('/sanctum/csrf-cookie');
-
-        // 2. Attempt login
-        const response = await apiClient.post('/api/login', this.loginForm);
-        console.log('Login response:', response);
-
-        // 3. Fetch user data after successful login
-        const userResponse = await apiClient.get('/api/user');
-        console.log('User data:', userResponse.data);
-
-        this.$emit('loginSuccess', userResponse.data);
+      if (result.success) {
+        this.$emit('loginSuccess', result.user);
         this.closeDialog();
-
-      } catch (error) {
-        console.error('Login failed:', error.response?.data || error.message);
-        if (error.response?.status === 422) {
-          this.errorMessage = Object.values(error.response.data.errors).flat().join(' ');
-        } else if (error.response?.status === 401) {
-          this.errorMessage = error.response.data.message || 'Invalid credentials.';
-        }
-        else {
-          this.errorMessage = 'Login failed. Please try again.';
-        }
-      } finally {
-        this.isLoading = false;
       }
     },
     async handleRegister() {
-      this.isLoading = true;
-      this.errorMessage = null;
-      console.log('Attempting registration with:', this.registerForm);
+      const result = await this.authStore.register(this.registerForm);
 
-      try {
-        // 1. Ensure CSRF cookie is set
-        await apiClient.get('/sanctum/csrf-cookie');
-
-        // 2. Attempt registration
-        const response = await apiClient.post('/api/register', this.registerForm);
-        console.log('Register response:', response.data);
-
-        // 3. Automatically log in the user after registration
-        await this.handleLoginAfterRegister(this.registerForm.email, this.registerForm.password);
-
-      } catch (error) {
-        console.error('Registration failed:', error.response?.data || error.message);
-        if (error.response?.status === 422) {
-          this.errorMessage = Object.values(error.response.data.errors).flat().join(' ');
-        } else {
-          this.errorMessage = 'Registration failed. Please try again.';
-        }
-      } finally {
-        this.isLoading = false;
-      }
-    },
-    async handleLoginAfterRegister(email, password) {
-      console.log('Attempting login after registration...');
-      try {
-        await apiClient.post('/api/login', { email, password });
-        const userResponse = await apiClient.get('/api/user');
-        this.$emit('registerSuccess', userResponse.data);
+      if (result.success) {
+        this.$emit('registerSuccess', result.user);
         this.closeDialog();
-      } catch (error) {
-        console.error('Auto-login after registration failed:', error.response?.data || error.message);
-        this.errorMessage = 'Registration successful, but auto-login failed. Please log in manually.';
       }
     },
   },
