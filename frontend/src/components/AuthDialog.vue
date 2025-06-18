@@ -106,7 +106,7 @@ export default {
 </script>
 
 <template>
-  <Dialog v-model:visible="internalVisible" @update:visible="closeDialog" modal
+  <Dialog v-model:visible="internalVisible" @update:visible="closeDialog" modal dismissableMask
     :header="currentMode === 'login' ? 'Login' : 'Register'" :style="{ width: '25rem' }"
     pt:root:class="!border-0 !bg-transparent" pt:mask:class="backdrop-blur-sm">
     <template #container="{ closeCallback }">

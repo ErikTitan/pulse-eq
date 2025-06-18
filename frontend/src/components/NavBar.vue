@@ -5,6 +5,7 @@ import Avatar from 'primevue/avatar';
 import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import AuthDialog from './AuthDialog.vue';
+import UserAvatar from './UserAvatar.vue';
 import Tooltip from 'primevue/tooltip';
 import { useAuthStore } from '../stores/authStore';
 import { useThemeStore } from '../stores/themeStore';
@@ -18,6 +19,7 @@ export default {
     Badge,
     Button,
     AuthDialog,
+    UserAvatar,
   },
   directives: {
     'tooltip': Tooltip
@@ -160,22 +162,27 @@ export default {
         </a>
       </template>
       <template #end>
-        <div class="flex items-center gap-2">
-          <Button class="v-ripple transition-all duration-400 ease-in-out" @click="toggleDarkMode"
-            :icon="isDarkMode ? 'pi pi-moon' : 'pi pi-sun'" :rounded="isScrolled" />
-          <InputText placeholder="Search" type="text" class="w-32 sm:w-auto" />
+        <div class="flex items-center gap-1">
+          <!-- Dark Mode Toggle -->
+          <Button @click="toggleDarkMode" :icon="isDarkMode ? 'pi pi-moon' : 'pi pi-sun'" text :rounded="isScrolled"
+            class="control-btn !p-2 !w-9 !h-9" v-tooltip.bottom="isDarkMode ? 'Light Mode' : 'Dark Mode'" />
 
           <!-- Conditional Auth Buttons / Avatar -->
           <template v-if="!isAuthenticated">
             <Button label="Login" icon="pi pi-user" @click="showLoginDialog" text :rounded="isScrolled"
-              class="!px-4 !py-2" />
+              class="control-btn !px-3 !py-2 !h-9" />
             <Button label="Register" icon="pi pi-user-plus" @click="showRegisterDialog" text :rounded="isScrolled"
-              class="!px-4 !py-2" />
+              class="control-btn !px-3 !py-2 !h-9" />
           </template>
           <template v-else>
-            <Avatar :label="avatarLabel" class="mr-2" shape="circle" @click="handleLogout" style="cursor: pointer;"
-              v-tooltip.bottom="'Logout'" />
-            <!-- Add dropdown menu here later if needed -->
+            <!-- Logout Button -->
+            <Button icon="pi pi-sign-out" @click="handleLogout" text :rounded="isScrolled"
+              class="control-btn !p-2 !w-9 !h-9 !text-red-500" v-tooltip.bottom="'Logout'" />
+            <!-- Avatar with consistent sizing - rightmost position -->
+            <div class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
+              :class="isScrolled ? 'rounded-lg' : 'rounded-none'">
+              <UserAvatar :user="userData" size="small" />
+            </div>
           </template>
         </div>
       </template>
@@ -186,4 +193,24 @@ export default {
   <AuthDialog v-model:visible="authDialogVisible" :mode="authDialogMode" @login-success="onLoginSuccess"
     @register-success="onRegisterSuccess" />
 </template>
-<style scoped></style>
+<style scoped>
+.control-btn {
+  @apply hover:bg-surface-100 dark:hover:bg-surface-800 transition-colors duration-200;
+}
+
+.avatar-btn {
+  @apply transition-transform duration-150 ease-in-out hover:scale-110;
+}
+</style>
+
+<style>
+/* Global tooltip styling - tooltips are rendered at document root */
+.p-tooltip {
+  --p-tooltip-max-width: 8rem !important;
+  --p-tooltip-padding: 0.375rem 0.625rem !important;
+}
+
+.p-tooltip-text {
+  font-size: 0.75rem !important;
+}
+</style>
