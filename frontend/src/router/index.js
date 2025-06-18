@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useAuthStore } from '@/stores/authStore'
 import HomeView from '../views/HomeView.vue'
 import EqualizerView from '../views/EqualizerView.vue'
 import ContactView from '@/views/ContactView.vue'
@@ -13,31 +14,37 @@ const router = createRouter({
       path: '/',
       name: 'home',
       component: HomeView,
+      meta: { requiresAuth: false },
     },
     {
       path: '/equalizer',
       name: 'equalizer',
       component: EqualizerView,
+      meta: { requiresAuth: false },
     },
     {
       path: '/contact',
       name: 'contact',
       component: ContactView,
+      meta: { requiresAuth: false },
     },
     {
       path: '/presets',
       name: 'presets',
       component: PresetsView,
+      meta: { requiresAuth: true },
     },
     {
       path: '/features',
       name: 'features',
       component: Features,
+      meta: { requiresAuth: false },
     },
     {
       path: '/:pathMatch(.*)*',
       name: 'notFound',
       component: NotFound,
+      meta: { requiresAuth: false },
     },
   ],
 })

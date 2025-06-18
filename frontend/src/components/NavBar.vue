@@ -6,7 +6,8 @@ import Badge from 'primevue/badge';
 import Button from 'primevue/button';
 import AuthDialog from './AuthDialog.vue';
 import Tooltip from 'primevue/tooltip';
-import apiClient from '../axios';
+import { useAuthStore } from '../stores/authStore';
+import { useThemeStore } from '../stores/themeStore';
 
 export default {
   name: 'NavBar',
@@ -21,6 +22,11 @@ export default {
   directives: {
     'tooltip': Tooltip
   },
+  setup() {
+    const authStore = useAuthStore();
+    const themeStore = useThemeStore();
+    return { authStore, themeStore };
+  },
   data() {
     return {
       items: [
@@ -30,27 +36,45 @@ export default {
         { label: 'Features', icon: 'pi pi-objects-column', route: '/features' },
         { label: 'Contact', icon: 'pi pi-fw pi-envelope', route: '/contact' },
       ],
-      isDarkMode: false,
       isScrolled: false,
       authDialogVisible: false,
       authDialogMode: 'login',
-      isAuthenticated: false,
-      userData: null,
     };
   },
   computed: {
+    isAuthenticated() {
+      return this.authStore.isAuthenticated;
+    },
+    userData() {
+      return this.authStore.user;
+    },
     avatarLabel() {
-      if (this.userData?.name) {
-        return this.userData.name.split(' ').map(n => n[0]).join('').toUpperCase();
-      }
-      return 'U';
+      return this.authStore.avatarLabel;
+    },
+    isDarkMode() {
+      return this.themeStore.isDarkMode;
+    },
+    // Derive auth requirements from router - single source of truth
+    itemsWithAuth() {
+      return this.items.map(item => ({
+        ...item,
+        requiresAuth: this.getRouteAuthRequirement(item.route)
+      }));
     }
   },
   methods: {
+    // Get auth requirement from router meta - single source of truth
+    getRouteAuthRequirement(routePath) {
+      try {
+        const route = this.$router.resolve(routePath);
+        return route.meta?.requiresAuth || false;
+      } catch (error) {
+        console.warn(`Could not resolve route: ${routePath}`);
+        return false;
+      }
+    },
     toggleDarkMode() {
-      document.documentElement.classList.toggle('my-app-dark');
-      this.isDarkMode = !this.isDarkMode;
-      localStorage.setItem('darkMode', this.isDarkMode.toString());
+      this.themeStore.toggleDarkMode();
     },
     handleScroll() {
       this.isScrolled = window.scrollY > 100;
@@ -63,59 +87,37 @@ export default {
       this.authDialogMode = 'register';
       this.authDialogVisible = true;
     },
-    onLoginSuccess(loggedInUser) {
-      console.log('Login successful in NavBar:', loggedInUser);
-      this.isAuthenticated = true;
-      this.userData = loggedInUser;
+    onLoginSuccess() {
       this.authDialogVisible = false;
+
+      // Redirect to originally requested page if user was redirected here
+      if (this.$route.query.redirect) {
+        this.$router.push(this.$route.query.redirect);
+      }
     },
-    onRegisterSuccess(registeredUser) {
-      console.log('Registration successful in NavBar:', registeredUser);
-      this.isAuthenticated = true;
-      this.userData = registeredUser;
+    onRegisterSuccess() {
       this.authDialogVisible = false;
+
+      // Redirect to originally requested page if user was redirected here
+      if (this.$route.query.redirect) {
+        this.$router.push(this.$route.query.redirect);
+      }
     },
     async handleLogout() {
-      console.log('Attempting logout');
-      try {
-        await apiClient.post('/api/logout');
-        this.isAuthenticated = false;
-        this.userData = null;
-        console.log('Logout successful');
-      } catch (error) {
-        console.error('Logout failed:', error.response?.data || error.message);
-        this.isAuthenticated = false;
-        this.userData = null;
-      }
-    },
-    async checkAuthOnMount() {
-      console.log("Checking auth status on mount...");
-      try {
-        const response = await apiClient.get('/api/user');
-        if (response.data) {
-          this.isAuthenticated = true;
-          this.userData = response.data;
-          console.log("User is authenticated:", this.userData);
-        }
-      } catch (error) {
-        if (error.response?.status !== 401 && error.response?.status !== 419) {
-          console.error("Error checking auth status:", error.response?.data || error.message);
-        } else {
-          console.log("User is not authenticated.");
-          this.isAuthenticated = false;
-          this.userData = null;
-        }
-      }
+      await this.authStore.logout();
     }
   },
   mounted() {
-    const savedDarkMode = localStorage.getItem('darkMode') === 'true';
-    this.isDarkMode = savedDarkMode;
-    if (savedDarkMode) {
-      document.documentElement.classList.add('my-app-dark');
-    }
+    // Initialize theme from store
+    this.themeStore.initializeTheme();
+
     window.addEventListener('scroll', this.handleScroll);
-    this.checkAuthOnMount();
+    this.authStore.checkAuthOnMount();
+
+    // Check if user was redirected here for login
+    if (this.$route.query.showLogin === 'true') {
+      this.showLoginDialog();
+    }
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
@@ -146,11 +148,15 @@ export default {
           <a v-ripple :href="href" v-bind="props.action" @click="navigate" class="flex items-center">
             <i :class="item.icon" />
             <span class="ml-2">{{ item.label }}</span>
+            <i v-if="item.requiresAuth && !isAuthenticated" class="pi pi-lock ml-auto text-yellow-500"
+              v-tooltip.bottom="'Login required'"></i>
           </a>
         </router-link>
         <a v-else v-ripple class="flex items-center" v-bind="props.action">
           <i :class="item.icon" />
           <span class="ml-2">{{ item.label }}</span>
+          <i v-if="item.requiresAuth && !isAuthenticated" class="pi pi-lock ml-auto text-yellow-500"
+            v-tooltip.bottom="'Login required'"></i>
         </a>
       </template>
       <template #end>
