@@ -13,28 +13,9 @@ export default defineConfig({
     },
   },
   server: {
-    proxy: {
-      '/api': {
-        target: 'http://localhost',
-        changeOrigin: true,
-        secure: false,
-        configure: (proxy, options) => {
-          proxy.on('proxyReq', (proxyReq, req, res) => {
-            console.log('🔄 Proxying request:', req.method, req.url)
-          })
-          proxy.on('proxyRes', (proxyRes, req, res) => {
-            console.log('✅ Proxy response:', proxyRes.statusCode, req.url)
-          })
-          proxy.on('error', (err, req, res) => {
-            console.log('❌ Proxy error:', err.message, req.url)
-          })
-        },
-      },
-      '/sanctum': {
-        target: 'http://localhost',
-        changeOrigin: true,
-        secure: false,
-      },
-    },
+    port: 5173,
+    host: '0.0.0.0', // Allow external connections for Docker
+    strictPort: true,
+    // Remove proxy configuration - nginx handles this now
   },
 })

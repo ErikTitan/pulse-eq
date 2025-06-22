@@ -1,9 +1,8 @@
 import axios from 'axios'
 
-const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || ''
-
+// Use relative URLs - nginx will handle routing
 const apiClient = axios.create({
-  baseURL: apiBaseUrl,
+  baseURL: '/api',
   withCredentials: true,
   withXSRFToken: true,
   headers: {
@@ -12,9 +11,24 @@ const apiClient = axios.create({
   },
 })
 
-apiClient.interceptors.request.use((request) => {
-  console.log('Request:', request.url)
-  return request
+// Add request interceptor for CSRF token
+apiClient.interceptors.request.use(async (config) => {
+  console.log('Request:', config.url)
+
+  // Get CSRF token for state-changing requests
+  if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
+    // Use axios.create() without baseURL for Sanctum endpoints
+    const sanctumClient = axios.create({
+      withCredentials: true,
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+    await sanctumClient.get('sanctum/csrf-cookie')
+  }
+
+  return config
 })
 
 export default apiClient

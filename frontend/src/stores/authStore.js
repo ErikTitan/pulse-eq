@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import axios from 'axios'
 import apiClient from '../axios'
 
 export const useAuthStore = defineStore('auth', {
@@ -32,7 +33,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        const response = await apiClient.get('/api/user')
+        const response = await apiClient.get('/user')
         if (response.data) {
           this.user = response.data
           this.isAuthenticated = true
@@ -58,14 +59,14 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         // 1. Ensure CSRF cookie is set
-        await apiClient.get('/sanctum/csrf-cookie')
+        await axios.create({ withCredentials: true }).get('/sanctum/csrf-cookie')
 
         // 2. Attempt login
-        const response = await apiClient.post('/api/login', credentials)
+        const response = await apiClient.post('/login', credentials)
         console.log('Login response:', response)
 
         // 3. Fetch user data after successful login
-        const userResponse = await apiClient.get('/api/user')
+        const userResponse = await apiClient.get('/user')
         console.log('User data:', userResponse.data)
 
         this.user = userResponse.data
@@ -97,10 +98,10 @@ export const useAuthStore = defineStore('auth', {
 
       try {
         // 1. Ensure CSRF cookie is set
-        await apiClient.get('/sanctum/csrf-cookie')
+        await axios.create({ withCredentials: true }).get('/sanctum/csrf-cookie')
 
         // 2. Attempt registration
-        const response = await apiClient.post('/api/register', userData)
+        const response = await apiClient.post('/register', userData)
         console.log('Register response:', response.data)
 
         // 3. Automatically log in the user after registration
@@ -132,8 +133,8 @@ export const useAuthStore = defineStore('auth', {
     async loginAfterRegister(email, password) {
       console.log('Attempting login after registration...')
       try {
-        await apiClient.post('/api/login', { email, password })
-        const userResponse = await apiClient.get('/api/user')
+        await apiClient.post('/login', { email, password })
+        const userResponse = await apiClient.get('/user')
 
         this.user = userResponse.data
         this.isAuthenticated = true
@@ -154,7 +155,7 @@ export const useAuthStore = defineStore('auth', {
       this.isLoading = true
 
       try {
-        await apiClient.post('/api/logout')
+        await apiClient.post('/logout')
         console.log('Logout successful')
       } catch (error) {
         console.error('Logout failed:', error.response?.data || error.message)
@@ -175,6 +176,42 @@ export const useAuthStore = defineStore('auth', {
     // Clear any error messages
     clearError() {
       this.error = null
+    },
+
+    // Google OAuth login
+    async loginWithGoogle() {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        // Redirect to backend OAuth endpoint - use relative URL since nginx handles routing
+        window.location.href = `/api/auth/google`
+      } catch (error) {
+        console.error('Google OAuth initiation failed:', error)
+        this.error = 'Failed to initiate Google login'
+        this.isLoading = false
+      }
+    },
+
+    // Handle OAuth callback (called from OAuth callback page)
+    handleOAuthCallback(params) {
+      if (params.oauth_status === 'success' && params.user) {
+        try {
+          const userData = JSON.parse(atob(params.user))
+          this.user = userData
+          this.isAuthenticated = true
+          this.error = null
+          return { success: true, user: userData }
+        } catch (error) {
+          console.error('Failed to parse OAuth user data:', error)
+          this.error = 'Failed to process authentication data'
+          return { success: false, error: this.error }
+        }
+      } else {
+        const errorMessage = params.message || 'OAuth authentication failed'
+        this.error = errorMessage
+        return { success: false, error: errorMessage }
+      }
     },
   },
 
