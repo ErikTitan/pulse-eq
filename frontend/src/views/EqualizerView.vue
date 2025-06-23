@@ -125,26 +125,26 @@ export default {
 </script>
 
 <template>
-  <div class="flex flex-col">
-    <div class="flex-1 pt-24 px-6 lg:px-20">
-      <div class="grid grid-cols-12 gap-6 h-full">
-        <!-- Left Card -->
+  <div class="flex flex-col min-h-screen">
+    <div class="flex-1 pt-24 px-6 lg:px-20 pb-6">
+      <div class="grid grid-cols-12 gap-6">
+        <!-- Left Controls -->
         <div class="col-span-12 lg:col-span-2">
-          <div class="col-span-12 lg:col-span-2">
-            <EqControls :weq8="weq8" :filters="filters" :audio-context="audioContext" :source="source"
-              :analyser-node="analyserNode" @update:filters="filters = $event" @update-weq8="weq8 = $event" />
-          </div>
+          <EqControls :weq8="weq8" :filters="filters" :audio-context="audioContext" :source="source"
+            :analyser-node="analyserNode" @update:filters="filters = $event" @update-weq8="weq8 = $event" />
         </div>
 
-        <!-- Middle Card -->
-        <div class="col-span-12 lg:col-span-8">
-          <Card class="shadow-xl">
+        <!-- Main Content -->
+        <div class="col-span-12 lg:col-span-10 flex flex-col gap-6">
+          <!-- Equalizer Display -->
+          <Card class="shadow-xl flex-grow">
             <template #title>
               <div class="text-2xl font-semibold mb-2">{{ preset.name }}</div>
             </template>
             <template #content>
-              <div class="flex flex-col items-center justify-center">
-                <div ref="eqContainer" class="border w-full h-96 relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
+              <div class="flex flex-col items-center justify-center h-full">
+                <div ref="eqContainer"
+                  class="border w-full h-[40vh] md:h-[50vh] lg:h-[60vh] relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
                   style="background-color: var(--eq-background)">
                   <GridCanvas :nyquist="nyquist" :device-pixel-ratio="devicePixelRatio" />
                   <AnalyzerCanvas v-if="analyserNode" :analyser-node="analyserNode" :nyquist="nyquist"
@@ -163,11 +163,9 @@ export default {
               </div>
             </template>
           </Card>
-        </div>
 
-        <!-- Right Card - Filter Controls -->
-        <div class="col-span-12 lg:col-span-2">
-          <Card class="h-full shadow-xl">
+          <!-- Band Controls -->
+          <Card class="shadow-xl">
             <template #title>
               <div class="text-xl font-semibold mb-4">Band Controls</div>
             </template>
