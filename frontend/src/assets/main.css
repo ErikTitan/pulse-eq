@@ -18,7 +18,8 @@ body {
 
 /* light mode colors */
 :root {
-  --body-bg: var(--p-surface-0);
+  --body-bg: var(--p-surface-50);
+  --card-bg: linear-gradient(180deg, var(--p-surface-0), var(--p-surface-100));
 
   --overlay: rgba(255, 255, 255, 0.2);
 
@@ -33,7 +34,13 @@ body {
     var(--p-blue-300) 100%
   );
 
-  --eq-background: var(--p-gray-200);
+  --eq-background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+
+  /* Equalizer colors */
+  --response-line-color: var(--p-gray-800);
+  --filter-handle-bg: var(--p-gray-600);
+  --filter-handle-border: var(--p-gray-800);
+  --filter-handle-text: var(--p-gray-50);
 }
 
 /* dark mode colors */
@@ -54,4 +61,10 @@ body {
   );
 
   --eq-background: rgb(17, 24, 39);
+
+  /* Equalizer colors */
+  --response-line-color: #ffffff;
+  --filter-handle-bg: rgba(79, 70, 229, 0.8);
+  --filter-handle-border: #ffffff;
+  --filter-handle-text: #ffffff;
 }
