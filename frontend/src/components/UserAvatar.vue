@@ -18,7 +18,6 @@ export default {
     },
     variant: {
       type: String,
-      default: 'marble',
       validator: (value) => ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
     },
   },
@@ -35,7 +34,6 @@ export default {
     userName() {
       return this.user?.name || 'Anonymous User';
     },
-    // Custom color palette that matches your app's theme
     colorPalette() {
       return [
         '#3B82F6', // blue-500
@@ -49,14 +47,27 @@ export default {
         '#EC4899', // pink-500
         '#6366F1'  // indigo-500
       ];
-    }
+    },
+    finalVariant() {
+      if (this.variant) {
+        return this.variant;
+      }
+      const variants = ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'];
+      const name = this.userName;
+      if (name === 'Anonymous User') {
+        return 'marble';
+      }
+      const hash = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      const index = hash % variants.length;
+      return variants[index];
+    },
   },
 };
 </script>
 
 <template>
   <div class="avatar-wrapper">
-    <Avatar :size="avatarSize" :name="userName" :variant="variant" :colors="colorPalette" :title="true" />
+    <Avatar :size="avatarSize" :name="userName" :variant="finalVariant" :colors="colorPalette" :title="true" />
   </div>
 </template>
 
