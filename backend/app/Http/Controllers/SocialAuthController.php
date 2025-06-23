@@ -80,14 +80,6 @@ class SocialAuthController extends Controller
             $params['message'] = $message;
         }
 
-        if ($user) {
-            $params['user'] = base64_encode(json_encode([
-                'id' => $user->id,
-                'name' => $user->name,
-                'email' => $user->email,
-                'avatar_url' => $user->avatar_url,
-            ]));
-        }
 
         $queryString = http_build_query($params);
 

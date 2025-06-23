@@ -26,9 +26,15 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
-    // Initialize auth state on app load
-    async checkAuthOnMount() {
-      console.log('Checking auth status on mount...')
+    // Validates the session on app startup to ensure the UI reflects the true auth state.
+    async validateSessionOnStartup() {
+      // If user is already authenticated from the OAuth callback or a previous check, don't re-fetch.
+      if (this.isAuthenticated) {
+        console.log('Skipping session validation on startup, user already authenticated.')
+        return
+      }
+
+      console.log('Validating session on startup...')
       this.isLoading = true
       this.error = null
 
@@ -37,14 +43,14 @@ export const useAuthStore = defineStore('auth', {
         if (response.data) {
           this.user = response.data
           this.isAuthenticated = true
-          console.log('User is authenticated:', this.user)
+          console.log('User session is valid:', this.user)
         }
       } catch (error) {
         if (error.response?.status !== 401 && error.response?.status !== 419) {
-          console.error('Error checking auth status:', error.response?.data || error.message)
-          this.error = 'Failed to check authentication status'
+          console.error('Error validating session:', error.response?.data || error.message)
+          this.error = 'Failed to validate session status'
         } else {
-          console.log('User is not authenticated.')
+          console.log('User session is not valid or has expired.')
           this.clearAuth()
         }
       } finally {
@@ -65,14 +71,8 @@ export const useAuthStore = defineStore('auth', {
         const response = await apiClient.post('/login', credentials)
         console.log('Login response:', response)
 
-        // 3. Fetch user data after successful login
-        const userResponse = await apiClient.get('/user')
-        console.log('User data:', userResponse.data)
-
-        this.user = userResponse.data
-        this.isAuthenticated = true
-
-        return { success: true, user: userResponse.data }
+        // 3. Fetch user data using the dedicated action
+        return await this.fetchUser()
       } catch (error) {
         console.error('Login failed:', error.response?.data || error.message)
 
@@ -134,12 +134,7 @@ export const useAuthStore = defineStore('auth', {
       console.log('Attempting login after registration...')
       try {
         await apiClient.post('/login', { email, password })
-        const userResponse = await apiClient.get('/user')
-
-        this.user = userResponse.data
-        this.isAuthenticated = true
-
-        return { success: true, user: userResponse.data }
+        return await this.fetchUser()
       } catch (error) {
         console.error(
           'Auto-login after registration failed:',
@@ -178,6 +173,27 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
     },
 
+    // Fetch the authenticated user
+    async fetchUser() {
+      this.isLoading = true
+      try {
+        const response = await apiClient.get('/user')
+        if (response.data) {
+          this.user = response.data
+          this.isAuthenticated = true
+          console.log('User data fetched successfully:', this.user)
+          return { success: true, user: this.user }
+        }
+        return { success: false, error: 'No user data returned.' }
+      } catch (error) {
+        console.error('Failed to fetch user:', error)
+        this.clearAuth()
+        return { success: false, error: 'Failed to fetch user data.' }
+      } finally {
+        this.isLoading = false
+      }
+    },
+
     // Google OAuth login
     async loginWithGoogle() {
       this.isLoading = true
@@ -195,18 +211,11 @@ export const useAuthStore = defineStore('auth', {
 
     // Handle OAuth callback (called from OAuth callback page)
     handleOAuthCallback(params) {
-      if (params.oauth_status === 'success' && params.user) {
-        try {
-          const userData = JSON.parse(atob(params.user))
-          this.user = userData
-          this.isAuthenticated = true
-          this.error = null
-          return { success: true, user: userData }
-        } catch (error) {
-          console.error('Failed to parse OAuth user data:', error)
-          this.error = 'Failed to process authentication data'
-          return { success: false, error: this.error }
-        }
+      if (params.oauth_status === 'success') {
+        // The session is now set on the backend.
+        // The frontend should now make a request to get the user data.
+        this.error = null
+        return { success: true }
       } else {
         const errorMessage = params.message || 'OAuth authentication failed'
         this.error = errorMessage

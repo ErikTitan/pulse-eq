@@ -4,6 +4,7 @@ import Footer from '@/components/FooterComponent.vue';
 import AnimatedGradientHeader from '@/components/AnimatedGradientHeader.vue';
 export default {
   name: 'home',
+  emits: ['showLogin', 'showRegister'],
   components: {
     Button,
     Footer,
@@ -65,7 +66,7 @@ export default {
     </div>
   </div>
 
-  <div class="py-6 px-6 lg:px-20 mx-0 my-12 lg:mx-20 rounded-[20px] " style="background: linear-gradient(0deg, 
+  <div class="py-6 px-6 lg:px-20 mx-0 my-12 lg:mx-20 rounded-[20px] " style="background: linear-gradient(0deg,
             var(--overlay),
             var(--overlay)),
             var(--gradient-testimonial)">

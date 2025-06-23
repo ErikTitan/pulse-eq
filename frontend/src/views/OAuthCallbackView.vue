@@ -54,31 +54,36 @@ export default {
   },
   methods: {
     async handleCallback() {
-      try {
-        // Get URL parameters
-        const urlParams = new URLSearchParams(window.location.search)
-        const params = Object.fromEntries(urlParams)
+      this.isProcessing = true
+      this.error = null
 
-        // Handle OAuth callback
-        const result = this.authStore.handleOAuthCallback(params)
+      // 1. Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search)
+      const params = Object.fromEntries(urlParams)
 
-        // Always confirm backend session by fetching user
-        try {
-          const userResponse = await this.authStore.fetchUser()
-          if (userResponse.success) {
-            this.$router.push('/')
-            return
-          }
-        } catch (e) {
-          // Ignore, will show error below
-        }
+      // 2. Let the store handle the initial status check from the URL
+      const initialResult = this.authStore.handleOAuthCallback(params)
 
-        // If not authenticated, show error
-        this.error = result.error || 'Authentication failed. Please try again.'
+      if (!initialResult.success) {
+        this.error = initialResult.error || 'Authentication failed due to an unknown issue.'
         this.isProcessing = false
-      } catch (error) {
-        console.error('OAuth callback error:', error)
-        this.error = 'An unexpected error occurred during authentication'
+        return
+      }
+
+      // 3. If the initial check is ok, fetch the user to confirm the session is valid
+      try {
+        const userResponse = await this.authStore.fetchUser()
+        if (userResponse.success) {
+          // On success, redirect to the home page
+          this.$router.push('/')
+        } else {
+          // If fetching user fails, it's an error
+          this.error = userResponse.error || 'Could not verify your session. Please try logging in again.'
+          this.isProcessing = false
+        }
+      } catch (e) {
+        console.error('Error during fetchUser in callback:', e)
+        this.error = 'An unexpected error occurred while verifying your session.'
         this.isProcessing = false
       }
     },
