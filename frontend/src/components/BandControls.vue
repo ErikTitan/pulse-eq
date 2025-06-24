@@ -36,7 +36,7 @@ export default {
       required: false
     }
   },
-  emits: ['update-filter'],
+  emits: ['update-filter', 'add-filter', 'remove-filter', 'reset-filter'],
   methods: {
     async updateFrequency(index, value) {
       const clampedValue = Math.max(20, Math.min(value, this.nyquist));
@@ -64,8 +64,12 @@ export default {
 <template>
   <div class="flex flex-wrap gap-4 justify-center">
     <div v-for="(filter, index) in filters" :key="index"
-      class="p-4 rounded-lg border border-surface-border flex-grow basis-48">
-      <div class="font-semibold mb-4 text-center">Band {{ index + 1 }}</div>
+      class="p-4 rounded-lg border border-surface-border flex-grow basis-48 relative">
+      <div class="flex justify-between items-center mb-4">
+        <span class="font-semibold">Band {{ index + 1 }}</span>
+        <Button icon="pi pi-times" class="p-button-rounded p-button-danger p-button-text"
+          @click="$emit('remove-filter', index)" />
+      </div>
 
       <div class="mb-4">
         <FloatLabel>
@@ -89,15 +93,21 @@ export default {
           <label>Gain</label>
           <span class="text-sm text-surface-500 dark:text-surface-400">{{ filter.gain.toFixed(1) }} dB</span>
         </div>
-        <Slider v-model="filter.gain" @update:modelValue="updateFilter(index, 'gain', $event)" :min="-15" :max="15"
+        <Slider v-model="filter.gain" @update:modelValue="updateFilter(index, 'gain', $event)" :min="-18" :max="18"
           :step="0.1" class="w-full" />
       </div>
 
-      <div class="flex items-center gap-2">
-        <Checkbox v-model="filter.bypass" @update:modelValue="updateFilter(index, 'bypass', $event)" :binary="true"
-          :inputId="`bypass-${index}`" />
-        <label :for="`bypass-${index}`">Bypass</label>
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2">
+          <Checkbox v-model="filter.bypass" @update:modelValue="updateFilter(index, 'bypass', $event)" :binary="true"
+            :inputId="`bypass-${index}`" />
+          <label :for="`bypass-${index}`">Bypass</label>
+        </div>
+        <Button label="Reset" @click="$emit('reset-filter', index)" class="p-button-text p-button-sm" />
       </div>
+    </div>
+    <div class="flex justify-center w-full mt-4">
+      <Button label="Add Filter" icon="pi pi-plus" @click="$emit('add-filter')" />
     </div>
   </div>
 </template>

@@ -43,18 +43,27 @@ export default {
       audioContext: null,
       source: null,
       weq8: null,
-      filters: equalizerStore.getDefaultFilters(),
       selectedPoint: null,
       devicePixelRatio: window.devicePixelRatio || 1,
-      nyquist: 24000,
+      nyquist: 20000,
     }
   },
   methods: {
+    addFilter() {
+      this.equalizerStore.addFilter();
+    },
+    removeFilter(index) {
+      this.equalizerStore.removeFilter(index);
+    },
+
+    resetFilter(index) {
+      this.equalizerStore.resetFilter(index);
+    },
+
     // Audio initialization and setup
     async initializeAudio() {
       const audioPath = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href
       const {
-        filters,
         audioContext,
         analyserNode,
         source,
@@ -62,7 +71,6 @@ export default {
         nyquist
       } = await this.equalizerStore.initializeAudio(audioPath)
 
-      this.filters = filters
       this.audioContext = audioContext
       this.analyserNode = analyserNode
       this.source = source
@@ -76,21 +84,19 @@ export default {
     },
 
     stopDragging(event) {
-      this.equalizerStore.stopDragging(event, this.filters)
+      this.equalizerStore.stopDragging(event)
     },
 
     handleDrag(event) {
       this.equalizerStore.handleDrag(
         event,
         this.$refs.eqContainer,
-        this.filters,
         this.weq8,
-        this.nyquist
       )
     },
 
     handleFilterScroll(event, index) {
-      this.equalizerStore.handleFilterScroll(event, index, this.filters, this.weq8)
+      this.equalizerStore.handleFilterScroll(event, index, this.weq8)
     },
 
     updateFilter(index, property, value) {
@@ -98,7 +104,6 @@ export default {
         index,
         property,
         value,
-        this.filters,
         this.weq8
       )
     },
@@ -130,8 +135,9 @@ export default {
       <div class="grid grid-cols-12 gap-6">
         <!-- Left Controls -->
         <div class="col-span-12 lg:col-span-2">
-          <EqControls :weq8="weq8" :filters="filters" :audio-context="audioContext" :source="source"
-            :analyser-node="analyserNode" @update:filters="filters = $event" @update-weq8="weq8 = $event" />
+          <EqControls :weq8="weq8" :filters="equalizerStore.filters" :audio-context="audioContext" :source="source"
+            :analyser-node="analyserNode" @update:filters="equalizerStore.filters = $event"
+            @update-weq8="weq8 = $event" />
         </div>
 
         <!-- Main Content -->
@@ -149,12 +155,13 @@ export default {
                   <GridCanvas :nyquist="nyquist" :device-pixel-ratio="devicePixelRatio" />
                   <AnalyzerCanvas v-if="analyserNode" :analyser-node="analyserNode" :nyquist="nyquist"
                     :device-pixel-ratio="devicePixelRatio" />
-                  <ResponseCanvas :weq8="weq8" :filters="filters" :nyquist="nyquist"
+                  <ResponseCanvas :weq8="weq8" :filters="equalizerStore.filters" :nyquist="nyquist"
                     :device-pixel-ratio="devicePixelRatio" @pointermove="handleDrag" @pointerup="stopDragging"
                     @pointerleave="stopDragging" />
-                  <FilterHandles :filters="filters" :selected-point="selectedPoint" :nyquist="nyquist"
-                    @update:filters="filters = $event" @pointerdown="startDragging" @pointermove="handleDrag"
-                    @pointerup="stopDragging" @pointercancel="stopDragging" @wheel="handleFilterScroll" />
+                  <FilterHandles :filters="equalizerStore.filters" :selected-point="equalizerStore.selectedPoint"
+                    :nyquist="nyquist" @update:filters="equalizerStore.filters = $event" @pointerdown="startDragging"
+                    @pointermove="handleDrag" @pointerup="stopDragging" @pointercancel="stopDragging"
+                    @wheel="handleFilterScroll" />
                 </div>
                 <div class="flex gap-4">
                   <Button icon="pi pi-play" severity="success" @click="playAudio" />
@@ -170,8 +177,9 @@ export default {
               <div class="text-xl font-semibold mb-4">Band Controls</div>
             </template>
             <template #content>
-              <BandControls :filters="filters" :filter-types="equalizerStore.filterTypes" :nyquist="nyquist"
-                :weq8="weq8" @update-filter="updateFilter" />
+              <BandControls :filters="equalizerStore.filters" :filter-types="equalizerStore.filterTypes"
+                :nyquist="nyquist" :weq8="weq8" @update-filter="updateFilter" @add-filter="addFilter"
+                @remove-filter="removeFilter" @reset-filter="resetFilter" />
             </template>
           </Card>
         </div>

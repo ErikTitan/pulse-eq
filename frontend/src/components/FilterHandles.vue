@@ -49,32 +49,13 @@ export default {
       const x = logPos * displayWidth;
 
       // Convert gain to y position (linear scale)
-      const y = displayHeight - ((filter.gain + 15) / 30) * displayHeight;
+      const y = displayHeight - ((filter.gain + 18) / 36) * displayHeight;
 
       return {
         transform: `translate(${x}px, ${y}px)`
       };
     },
 
-    initializeFilterPositions() {
-      const minF = Math.log10(20);
-      const maxF = Math.log10(this.nyquist);
-      const step = (maxF - minF) / (this.filters.length - 1);
-
-      const newFilters = this.filters.map((filter, index) => {
-        const frequency = Math.pow(10, minF + step * index);
-        return {
-          ...filter,
-          frequency,
-          gain: 0,
-          Q: filter.Q || 1,
-          bypass: false
-        };
-      });
-
-      // Emit the updated filters back to parent
-      this.$emit('update:filters', newFilters);
-    },
 
     getFilterLabel(filter) {
       return `${this.formatFrequency(filter.frequency)} ${this.formatFrequencyUnit(filter.frequency)}`;
@@ -96,7 +77,6 @@ export default {
   },
   mounted() {
     this.canvas = this.$el.parentElement;
-    this.initializeFilterPositions();
   }
 }
 </script>

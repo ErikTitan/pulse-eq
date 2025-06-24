@@ -81,7 +81,7 @@ export default {
         const gain = combinedResponse[i];
         const db = 20 * Math.log10(gain);
         const x = (i / frequencies.length) * displayWidth;
-        const y = displayHeight - ((db + 15) / 30) * displayHeight;
+        const y = displayHeight - ((db + 18) / 36) * displayHeight;
 
         if (i === 0) {
           ctx.moveTo(x, y);

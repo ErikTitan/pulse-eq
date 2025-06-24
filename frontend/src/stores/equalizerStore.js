@@ -1,14 +1,26 @@
+function toLog10(value, min, max) {
+  return (Math.log10(value) - Math.log10(min)) / (Math.log10(max) - Math.log10(min))
+}
+
+function toLin(value, min, max) {
+  return Math.pow(10, value * (Math.log10(max) - Math.log10(min)) + Math.log10(min))
+}
+
 import { defineStore } from 'pinia'
 import { WEQ8Runtime } from 'weq8'
 
 export const useEqualizerStore = defineStore('equalizer', {
   state: () => ({
     savedState: null,
+    filters: [],
     defaultFilters: [
-      { type: 'lowshelf12', frequency: 80, gain: 0, Q: 1, bypass: false },
-      { type: 'peaking12', frequency: 200, gain: 0, Q: 1, bypass: false },
-      { type: 'peaking12', frequency: 500, gain: 0, Q: 1, bypass: false },
-      { type: 'highshelf12', frequency: 1000, gain: 0, Q: 1, bypass: false },
+      { type: 'lowshelf12', frequency: 60, gain: 0, Q: 1, bypass: false },
+      { type: 'peaking12', frequency: 150, gain: 0, Q: 1, bypass: false },
+      { type: 'peaking12', frequency: 400, gain: 0, Q: 1, bypass: false },
+      { type: 'peaking12', frequency: 1000, gain: 0, Q: 1, bypass: false },
+      { type: 'peaking12', frequency: 2400, gain: 0, Q: 1, bypass: false },
+      { type: 'peaking12', frequency: 6000, gain: 0, Q: 1, bypass: false },
+      { type: 'highshelf12', frequency: 12000, gain: 0, Q: 1, bypass: false },
     ],
     filterTypes: [
       { label: 'LP', value: 'lowpass12' },
@@ -22,12 +34,13 @@ export const useEqualizerStore = defineStore('equalizer', {
     ],
     selectedPoint: null,
     isDragging: false,
+    dragState: null,
     audioContext: null,
     analyserNode: null,
     audio: null,
     source: null,
     weq8: null,
-    nyquist: 24000,
+    nyquist: 20000,
   }),
 
   getters: {
@@ -59,10 +72,57 @@ export const useEqualizerStore = defineStore('equalizer', {
   },
 
   actions: {
+    syncWeq8Filters() {
+      if (!this.weq8) return
+
+      for (let i = 0; i < 8; i++) {
+        const filter = this.filters[i]
+        if (filter) {
+          this.weq8.setFilterType(i, filter.type)
+          this.weq8.setFilterFrequency(i, filter.frequency)
+          if (this.filterHasGain(filter.type)) {
+            this.weq8.setFilterGain(i, filter.gain)
+          }
+          if (this.filterHasQ(filter.type)) {
+            this.weq8.setFilterQ(i, filter.Q)
+          }
+          this.weq8.toggleBypass(i, filter.bypass)
+        } else {
+          this.weq8.setFilterType(i, 'noop')
+        }
+      }
+    },
+
+    addFilter() {
+      if (this.filters.length >= 8) {
+        console.warn('Maximum number of filters (8) reached.')
+        return
+      }
+      const newFilter = { type: 'peaking12', frequency: 1000, gain: 0, Q: 1, bypass: false }
+      this.filters.push(newFilter)
+      this.syncWeq8Filters()
+      this.updateState()
+    },
+
+    removeFilter(index) {
+      this.filters.splice(index, 1)
+      this.syncWeq8Filters()
+      this.updateState()
+    },
+
     // Audio initialization methods
+    resetFilter(index) {
+      const filter = this.filters[index]
+      if (filter) {
+        filter.gain = 0
+        filter.Q = 1
+        filter.bypass = false
+        this.syncWeq8Filters()
+        this.updateState()
+      }
+    },
     async initializeAudio(audioPath) {
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
-      this.nyquist = this.audioContext.sampleRate / 2
 
       this.audio = new Audio(audioPath)
       this.source = this.audioContext.createMediaElementSource(this.audio)
@@ -80,12 +140,14 @@ export const useEqualizerStore = defineStore('equalizer', {
 
       // Try to load saved state
       const savedState = this.loadFromLocalStorage()
-      const filters = savedState?.filters
-        ? this.initializeWithSavedState(savedState)
-        : this.initializeFilterPositions()
+      if (savedState?.filters) {
+        this.filters = this.initializeWithSavedState(savedState)
+      } else {
+        this.filters = this.initializeFilterPositions()
+        this.syncWeq8Filters() // Sync for default filters
+      }
 
       return {
-        filters,
         audioContext: this.audioContext,
         analyserNode: this.analyserNode,
         source: this.source,
@@ -160,73 +222,89 @@ export const useEqualizerStore = defineStore('equalizer', {
 
       this.selectedPoint = index
       this.isDragging = true
+      const filter = this.filters[index]
+      this.dragState = {
+        index: index,
+        startX: event.clientX,
+        startY: event.clientY,
+        startFreq: filter.frequency,
+        startGain: filter.gain,
+        pointerId: event.pointerId,
+      }
     },
 
-    stopDragging(event, filters) {
-      if (this.selectedPoint !== null) {
+    stopDragging(event) {
+      if (this.isDragging && this.dragState?.pointerId === event.pointerId) {
         const handle = event.target
         handle.releasePointerCapture(event.pointerId)
 
-        this.updateState(filters)
+        this.updateState() // Persist the final state
+        this.isDragging = false
+        this.selectedPoint = null
+        this.dragState = null
       }
-      this.isDragging = false
-      this.selectedPoint = null
     },
 
-    handleDrag(event, containerRef, filters, weq8, nyquist) {
-      if (!this.isDragging || this.selectedPoint === null) return
+    handleDrag(event, containerRef, weq8) {
+      if (!this.isDragging || !this.dragState || this.dragState.pointerId !== event.pointerId)
+        return
 
       const rect = containerRef.getBoundingClientRect()
-      const x = event.clientX - rect.left
-      const y = event.clientY - rect.top
-
       const width = rect.width
-      const minF = Math.log10(20)
-      const maxF = Math.log10(nyquist)
-      const logX = (x / width) * (maxF - minF) + minF
-      const newFreq = Math.pow(10, logX)
-
       const height = rect.height
-      const newGain = 15 - (y / height) * 30
 
-      const filter = filters[this.selectedPoint]
+      const deltaX = event.clientX - this.dragState.startX
+      const deltaY = event.clientY - this.dragState.startY
+
+      // --- Frequency Calculation (Logarithmic) ---
+      const minFreq = 20
+      const maxFreq = this.nyquist
+      const startFreqLog = toLog10(this.dragState.startFreq, minFreq, maxFreq)
+      const pixelDeltaAsPercent = deltaX / width
+      const newFreq = toLin(startFreqLog + pixelDeltaAsPercent, minFreq, maxFreq)
+      const clampedFreq = Math.max(minFreq, Math.min(maxFreq, newFreq))
+
+      // --- Gain Calculation (Linear) ---
+      const gainRange = 36 // -18 to +18
+      const gainPerPixel = gainRange / height
+      const newGain = this.dragState.startGain - deltaY * gainPerPixel
+      const clampedGain = Math.max(-18, Math.min(18, newGain))
+
+      const filter = this.filters[this.dragState.index]
+
+      // --- Update state for UI handle position ---
+      filter.frequency = clampedFreq
       if (this.filterHasGain(filter.type)) {
-        this.updateFilter(
-          this.selectedPoint,
-          'gain',
-          Math.max(-15, Math.min(15, newGain)),
-          filters,
-          weq8,
-        )
+        filter.gain = clampedGain
       }
 
-      const clampedFreq = Math.max(20, Math.min(nyquist, newFreq))
-      this.updateFilter(this.selectedPoint, 'frequency', clampedFreq, filters, weq8)
+      // --- DIRECTLY update weq8 runtime for immediate audio response ---
+      if (weq8) {
+        weq8.setFilterFrequency(this.dragState.index, clampedFreq)
+        if (this.filterHasGain(filter.type)) {
+          weq8.setFilterGain(this.dragState.index, clampedGain)
+        }
+      }
     },
 
-    handleFilterScroll(event, index, filters, weq8) {
+    handleFilterScroll(event, index, weq8) {
       event.preventDefault()
-      const filter = filters[index]
+      const filter = this.filters[index]
       if (!this.filterHasQ(filter.type)) return
 
       const delta = Math.sign(event.deltaY) * -1
       const step = 0.1
       const newQ = Math.max(0.1, Math.min(10, filter.Q + delta * step))
 
-      this.updateFilter(index, 'Q', newQ, filters, weq8)
+      this.updateFilter(index, 'Q', newQ, weq8)
     },
 
-    async updateFilter(index, property, value, filters, weq8) {
-      const filter = filters[index]
+    async updateFilter(index, property, value, weq8) {
+      const filter = this.filters[index]
       const startValue = filter[property]
 
       if (property === 'frequency' || property === 'gain' || property === 'Q') {
-        if (property === 'gain') {
-          filter[property] = value
-        } else {
-          const transitionedValue = await this.smoothTransition(startValue, value)
-          filter[property] = transitionedValue
-        }
+        filter[property] = value
       } else {
         filter[property] = value
       }
@@ -256,52 +334,19 @@ export const useEqualizerStore = defineStore('equalizer', {
       }
     },
 
-    async smoothTransition(startValue, endValue, duration = 50) {
-      return new Promise((resolve) => {
-        const startTime = performance.now()
-
-        const animate = (currentTime) => {
-          const elapsed = currentTime - startTime
-          const progress = Math.min(elapsed / duration, 1)
-
-          const eased =
-            progress < 0.5
-              ? 4 * progress * progress * progress
-              : 1 - Math.pow(-2 * progress + 2, 3) / 2
-
-          const currentValue = startValue + (endValue - startValue) * eased
-
-          if (progress < 1) {
-            requestAnimationFrame(animate)
-          } else {
-            resolve(endValue)
-          }
-
-          return currentValue
-        }
-
-        requestAnimationFrame(animate)
-      })
-    },
-
-    createSpacedFilters(defaultFilters, audioContext) {
-      const minF = Math.log10(80)
-      const maxF = Math.log10((audioContext.sampleRate / 2) * 0.75)
-      const step = (maxF - minF) / (defaultFilters.length - 1)
-
-      return defaultFilters.map((defaultFilter, index) => ({
+    createSpacedFilters(defaultFilters) {
+      return defaultFilters.map((defaultFilter) => ({
         ...defaultFilter,
-        frequency: Math.pow(10, minF + step * index),
         gain: 0,
         Q: 1,
         bypass: false,
       }))
     },
 
-    updateState(filters) {
+    updateState() {
       // Save complete filter state including all properties
       const completeState = {
-        filters: filters.map((filter) => ({
+        filters: this.filters.map((filter) => ({
           type: filter.type,
           frequency: filter.frequency,
           gain: filter.gain,
