@@ -28,9 +28,8 @@ export const useAuthStore = defineStore('auth', {
   actions: {
     // Validates the session on app startup to ensure the UI reflects the true auth state.
     async validateSessionOnStartup() {
-      // If user is already authenticated from the OAuth callback or a previous check, don't re-fetch.
-      if (this.isAuthenticated) {
-        console.log('Skipping session validation on startup, user already authenticated.')
+      // Only validate if isAuthenticated is true (from localStorage) but we don't have user data yet.
+      if (!this.isAuthenticated) {
         return
       }
 

@@ -114,7 +114,6 @@ export default {
     this.themeStore.initializeTheme();
 
     window.addEventListener('scroll', this.handleScroll);
-    this.authStore.validateSessionOnStartup();
 
     // Check if user was redirected here for login
     if (this.$route.query.showLogin === 'true') {

@@ -3,6 +3,7 @@ import NavBar from './components/NavBar.vue'
 import FooterComponent from './components/FooterComponent.vue';
 import ScrollTop from 'primevue/scrolltop';
 import { useThemeStore } from './stores/themeStore';
+import { useAuthStore } from './stores/authStore';
 
 export default {
   components: {
@@ -12,7 +13,8 @@ export default {
   },
   setup() {
     const themeStore = useThemeStore();
-    return { themeStore };
+    const authStore = useAuthStore();
+    return { themeStore, authStore };
   },
   methods: {
     handleShowLogin() {
@@ -25,6 +27,7 @@ export default {
   mounted() {
     // Initialize theme on app startup
     this.themeStore.initializeTheme();
+    this.authStore.validateSessionOnStartup();
   }
 }
 </script>
