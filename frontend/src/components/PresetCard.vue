@@ -30,6 +30,11 @@
                 tooltip="Quick Apply" />
               <Button icon="pi pi-download" class="p-button-rounded p-button-outlined"
                 @click="$emit('download', preset)" tooltip="Download" />
+              <Button v-if="showActions" icon="pi pi-pencil"
+                class="p-button-rounded p-button-outlined p-button-secondary" @click="$emit('edit', preset)"
+                tooltip="Edit" />
+              <Button v-if="showActions" icon="pi pi-trash" class="p-button-rounded p-button-outlined p-button-danger"
+                @click="$emit('delete', preset)" tooltip="Delete" />
             </div>
           </div>
         </div>
@@ -60,29 +65,70 @@ export default {
     preset: {
       type: Object,
       required: true
+    },
+    showActions: {
+      type: Boolean,
+      default: false
     }
   },
-  emits: ['apply', 'download'],
+  emits: ['apply', 'download', 'edit', 'delete'],
   computed: {
     chartOptions() {
+      const documentStyle = getComputedStyle(document.documentElement);
+      const textColor = documentStyle.getPropertyValue('--p-text-color');
+      const chartColor = this.preset.color || '#4ade80';
+
       return {
         plugins: {
           legend: {
             display: false
+          },
+          tooltip: {
+            displayColors: false,
+            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+            titleColor: '#ffffff',
+            bodyColor: '#ffffff',
+            borderColor: 'rgba(255, 255, 255, 0.2)',
+            borderWidth: 1,
+            callbacks: {
+              title: (context) => {
+                return `Frequency: ${context[0].label}`;
+              },
+              label: (context) => {
+                const gain = context.parsed.y.toFixed(1);
+                return `Gain: ${gain} dB`;
+              }
+            }
           }
         },
         scales: {
           y: {
             display: false,
-            min: -12,
-            max: 12
+            min: -18,
+            max: 18
           },
           x: {
             display: false
           }
         },
         responsive: true,
-        maintainAspectRatio: false
+        maintainAspectRatio: false,
+        elements: {
+          line: {
+            backgroundColor: (context) => {
+              const chart = context.chart;
+              const { ctx, chartArea } = chart;
+              if (!chartArea) {
+                return null;
+              }
+              const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
+              gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+              gradient.addColorStop(1, `${chartColor}33`);
+              return gradient;
+            },
+            fill: true,
+          }
+        }
       }
     }
   }

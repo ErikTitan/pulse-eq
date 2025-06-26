@@ -391,6 +391,32 @@ export const useEqualizerStore = defineStore('equalizer', {
         return null
       }
     },
+    loadPreset(newFilters) {
+      if (!Array.isArray(newFilters)) {
+        console.error('Invalid preset format: not an array.', newFilters)
+        return
+      }
+
+      if (newFilters.length > 8) {
+        console.warn(
+          `Preset has ${newFilters.length} filters, but a maximum of 8 are supported. Truncating.`,
+        )
+        newFilters = newFilters.slice(0, 8)
+      }
+
+      const validatedFilters = newFilters.map((f) => ({
+        type: f.type || 'peaking12',
+        frequency: f.frequency || 1000,
+        gain: f.gain || 0,
+        Q: f.Q || 1,
+        bypass: f.bypass || false,
+      }))
+
+      this.filters = validatedFilters
+
+      this.syncWeq8Filters()
+      this.updateState()
+    },
     getDefaultFilters() {
       return [...this.defaultFilters]
     },

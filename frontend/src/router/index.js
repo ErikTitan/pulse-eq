@@ -4,6 +4,7 @@ import HomeView from '../views/HomeView.vue'
 import EqualizerView from '../views/EqualizerView.vue'
 import ContactView from '@/views/ContactView.vue'
 import PresetsView from '@/views/PresetsView.vue'
+import MyPresetsView from '@/views/MyPresetsView.vue'
 import NotFound from '@/views/NotFound.vue'
 import Features from '@/views/Features.vue'
 import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
@@ -34,6 +35,12 @@ const router = createRouter({
       name: 'presets',
       component: PresetsView,
       meta: { requiresAuth: true },
+    },
+    {
+        path: '/my-presets',
+        name: 'my-presets',
+        component: MyPresetsView,
+        meta: { requiresAuth: true },
     },
     {
       path: '/features',

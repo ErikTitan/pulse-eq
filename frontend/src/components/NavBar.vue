@@ -174,10 +174,7 @@ export default {
               class="control-btn !px-3 !py-2 !h-9" />
           </template>
           <template v-else>
-            <!-- Logout Button -->
-            <Button icon="pi pi-sign-out" @click="handleLogout" text :rounded="isScrolled"
-              class="control-btn !p-2 !w-9 !h-9 !text-red-500" v-tooltip.bottom="'Logout'" />
-            <!-- Avatar with consistent sizing - rightmost position -->
+            <!-- Avatar with dropdown menu -->
             <div class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
               :class="isScrolled ? 'rounded-lg' : 'rounded-none'">
               <UserAvatar :user="userData" size="small" />

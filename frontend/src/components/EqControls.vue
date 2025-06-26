@@ -5,8 +5,13 @@ import Toast from 'primevue/toast';
 import Dialog from 'primevue/dialog';
 import Textarea from 'primevue/textarea';
 import FileUpload from 'primevue/fileupload';
+import InputText from 'primevue/inputtext';
+import Checkbox from 'primevue/checkbox';
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { WEQ8Runtime } from 'weq8';
+
+import { useAuthStore } from '@/stores/authStore';
+import { createPreset } from '@/services/presets';
 
 export default {
     name: 'EqControls',
@@ -16,7 +21,9 @@ export default {
         Toast,
         Dialog,
         Textarea,
-        FileUpload
+        FileUpload,
+        InputText,
+        Checkbox
     },
     props: {
         weq8: {
@@ -42,8 +49,10 @@ export default {
     },
     data() {
         const equalizerStore = useEqualizerStore();
+        const authStore = useAuthStore();
         return {
             equalizerStore,
+            authStore,
             preset: {
                 name: 'Equalizer',
                 description: '',
@@ -51,8 +60,14 @@ export default {
             uploadedFile: null,
             showExportDialog: false,
             showImportDialog: false,
+            showSaveDialog: false,
             exportedSettings: '',
             importedSettings: '',
+            savePresetForm: {
+                name: '',
+                category: '',
+                public: false,
+            },
         }
     },
     emits: ['update:filters', 'update-filter', 'update-weq8'],
@@ -77,6 +92,56 @@ export default {
                 detail: 'EQ settings have been reset to default',
                 life: 3000
             });
+        },
+
+        handleSave() {
+            if (this.authStore.isAuthenticated) {
+                this.showSaveDialog = true;
+            } else {
+                this.exportSettings();
+            }
+        },
+
+        async savePreset() {
+            try {
+                const settings = this.filters.map(filter => ({
+                    type: filter.type,
+                    frequency: filter.frequency,
+                    gain: filter.gain,
+                    Q: filter.Q,
+                    bypass: filter.bypass
+                }));
+
+                const payload = {
+                    name: this.savePresetForm.name,
+                    category: this.savePresetForm.category,
+                    public: this.savePresetForm.public,
+                    settings: JSON.stringify(settings),
+                };
+
+                await createPreset(payload);
+
+                this.$toast.add({
+                    severity: 'success',
+                    summary: 'Saved!',
+                    detail: 'Preset saved successfully',
+                    life: 3000
+                });
+
+                this.showSaveDialog = false;
+                this.savePresetForm = {
+                    name: '',
+                    category: '',
+                    public: false,
+                };
+            } catch (error) {
+                this.$toast.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Failed to save preset',
+                    life: 3000
+                });
+            }
         },
 
         exportSettings() {
@@ -260,10 +325,32 @@ export default {
         <template #content>
             <Toast />
             <div class="flex flex-col gap-2">
-                <Button label="Save" severity="primary" rounded @click="exportSettings" />
+                <Button label="Save" severity="primary" rounded @click="handleSave" />
                 <Button label="Import" outlined rounded @click="showImportDialog = true" />
                 <Button label="Reset" severity="secondary" outlined rounded @click="resetEQ" />
             </div>
+
+            <!-- Save Preset Dialog -->
+            <Dialog v-model:visible="showSaveDialog" header="Save Preset" modal style="width: 50vw">
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-col gap-2">
+                        <label for="preset-name">Name</label>
+                        <InputText id="preset-name" v-model="savePresetForm.name" />
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <label for="preset-category">Category</label>
+                        <InputText id="preset-category" v-model="savePresetForm.category" />
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <Checkbox id="preset-public" v-model="savePresetForm.public" :binary="true" />
+                        <label for="preset-public">Public</label>
+                    </div>
+                    <div class="flex justify-end gap-2">
+                        <Button label="Cancel" severity="secondary" @click="showSaveDialog = false" />
+                        <Button label="Save" severity="primary" @click="savePreset" />
+                    </div>
+                </div>
+            </Dialog>
 
             <!-- Export Dialog -->
             <Dialog v-model:visible="showExportDialog" header="Export Filter Settings" modal style="width: 50vw">

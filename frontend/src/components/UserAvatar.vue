@@ -1,10 +1,14 @@
 <script>
 import Avatar from 'vue-boring-avatars';
+import Menu from 'primevue/menu';
+import { useAuthStore } from '@/stores/authStore';
+import { useThemeStore } from '@/stores/themeStore';
 
 export default {
   name: 'UserAvatar',
   components: {
     Avatar,
+    Menu,
   },
   props: {
     user: {
@@ -20,6 +24,41 @@ export default {
       type: String,
       validator: (value) => ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
     },
+  },
+  setup() {
+    const authStore = useAuthStore();
+    const themeStore = useThemeStore();
+    return { authStore, themeStore };
+  },
+  data() {
+    return {
+      menuItems: [
+        {
+          label: 'My Presets',
+          icon: 'pi pi-sliders-h',
+          command: () => {
+            this.$router.push('/my-presets');
+          },
+        },
+        {
+          label: 'Toggle Theme',
+          icon: this.themeStore.isDarkMode ? 'pi pi-sun' : 'pi pi-moon',
+          command: () => {
+            this.themeStore.toggleDarkMode();
+          },
+        },
+        {
+          separator: true,
+        },
+        {
+          label: 'Logout',
+          icon: 'pi pi-sign-out',
+          command: () => {
+            this.authStore.logout();
+          },
+        },
+      ],
+    };
   },
   computed: {
     avatarSize() {
@@ -62,12 +101,25 @@ export default {
       return variants[index];
     },
   },
+  methods: {
+    toggleMenu(event) {
+      this.$refs.menu.toggle(event);
+    },
+  },
+  watch: {
+    'themeStore.isDarkMode'(newVal) {
+      this.menuItems[1].icon = newVal ? 'pi pi-sun' : 'pi pi-moon';
+    },
+  },
 };
 </script>
 
 <template>
-  <div class="avatar-wrapper">
-    <Avatar :size="avatarSize" :name="userName" :variant="finalVariant" :colors="colorPalette" :title="true" />
+  <div class="relative">
+    <button @click="toggleMenu" class="avatar-wrapper">
+      <Avatar :size="avatarSize" :name="userName" :variant="finalVariant" :colors="colorPalette" :title="true" />
+    </button>
+    <Menu ref="menu" :model="menuItems" :popup="true" />
   </div>
 </template>
 
@@ -80,5 +132,6 @@ export default {
   overflow: hidden;
   width: 100%;
   height: 100%;
+  cursor: pointer;
 }
 </style>
