@@ -31,4 +31,20 @@ apiClient.interceptors.request.use(async (config) => {
   return config
 })
 
+// Add response interceptor for handling 401/419 errors
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response && [401, 419].includes(error.response.status)) {
+      // Dynamically import the store here to avoid circular dependencies
+      const { useAuthStore } = await import('./stores/authStore')
+      const authStore = useAuthStore()
+      if (authStore.isAuthenticated) {
+        authStore.logout()
+      }
+    }
+    return Promise.reject(error)
+  }
+)
+
 export default apiClient

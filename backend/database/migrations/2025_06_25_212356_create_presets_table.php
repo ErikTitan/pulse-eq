@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('name');
             $table->json('settings');
             $table->boolean('public')->default(false);
-            $table->string('category');
+            
             $table->timestamps();
         });
     }

@@ -14,13 +14,18 @@ class Preset extends Model
         'name',
         'settings',
         'public',
-        'category',
+        'preset_category_id',
         'color',
     ];
 
     protected $casts = [
         'settings' => 'json',
     ];
+
+    public function presetCategory(): BelongsTo
+    {
+        return $this->belongsTo(PresetCategory::class);
+    }
 
     public function user(): BelongsTo
     {

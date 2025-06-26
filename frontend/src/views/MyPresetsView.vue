@@ -23,7 +23,8 @@
         </div>
         <div>
           <label for="category" class="block text-sm font-medium text-gray-300">Category</label>
-          <InputText id="category" v-model="presetForm.category" class="w-full" />
+          <Select id="category" v-model="presetForm.preset_category_id" :options="presetCategoryStore.categories"
+            optionLabel="name" optionValue="id" placeholder="Select a Category" class="w-full" />
         </div>
         <div>
           <label for="settings" class="block text-sm font-medium text-gray-300">Settings (JSON)</label>
@@ -64,10 +65,12 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Checkbox from 'primevue/checkbox';
 import ColorPicker from 'primevue/colorpicker';
+import Select from 'primevue/select';
 import PresetCard from '@/components/PresetCard.vue';
 import { getUserPresets, createPreset, updatePreset, deletePreset } from '@/services/presets';
 import { useAuthStore } from '@/stores/authStore';
 import { useEqualizerStore } from '@/stores/equalizerStore';
+import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
 
 export default {
   name: 'MyPresetsView',
@@ -78,9 +81,11 @@ export default {
     Textarea,
     Checkbox,
     ColorPicker,
+    Select,
     PresetCard
   },
   data() {
+    const presetCategoryStore = usePresetCategoryStore();
     return {
       presets: [],
       editingPreset: null,
@@ -89,15 +94,17 @@ export default {
       presetToDelete: null,
       presetForm: {
         name: '',
-        category: '',
+        preset_category_id: null,
         settings: '',
         public: false,
         color: '#4ade80',
       },
+      presetCategoryStore,
     };
   },
   async created() {
     await this.fetchPresets();
+    this.presetCategoryStore.fetchPresetCategories();
   },
   methods: {
     async fetchPresets() {
@@ -125,16 +132,17 @@ export default {
 
           const formatFrequency = (freq) => {
             if (freq >= 1000) {
-              return `${(freq / 1000).toFixed(1)}k`;
+              return `${Math.round(freq / 1000)}kHz`;
             }
-            return freq.toString();
+            return `${Math.round(freq)}Hz`;
           };
 
           const transformedPreset = {
             id: p.id,
             name: p.name || 'Unnamed Preset',
             creator: authStore.user?.name || 'You',
-            category: p.category || 'General',
+            preset_category_id: p.preset_category_id,
+            preset_category: p.preset_category || { name: 'General' },
             tags: p.tags || [],
             usageCount: p.usage_count || 0,
             rating: p.rating || 0,
@@ -169,7 +177,11 @@ export default {
     editPreset(preset) {
       this.editingPreset = preset;
       try {
-        this.presetForm = { ...preset, settings: JSON.stringify(JSON.parse(preset.settings), null, 2) };
+        this.presetForm = {
+          ...preset,
+          settings: JSON.stringify(JSON.parse(preset.settings), null, 2),
+          public: !!preset.public,
+        };
       } catch (e) {
         this.presetForm = { ...preset, settings: 'Error parsing settings.' }
         console.error(`Could not parse settings for preset ${preset.id} on edit:`, preset.settings, e);
@@ -184,7 +196,7 @@ export default {
     resetForm() {
       this.presetForm = {
         name: '',
-        category: '',
+        preset_category_id: null,
         settings: '',
         public: false,
         color: '#4ade80',
@@ -192,11 +204,12 @@ export default {
     },
     async savePreset() {
       try {
-        const settings = JSON.parse(this.presetForm.settings);
+        // Ensure the settings are valid JSON before creating the payload
+        JSON.parse(this.presetForm.settings);
         const payload = {
           name: this.presetForm.name,
-          category: this.presetForm.category,
-          settings: settings,
+          preset_category_id: this.presetForm.preset_category_id,
+          settings: this.presetForm.settings, // Pass settings as a string
           public: this.presetForm.public,
           color: this.presetForm.color,
         };

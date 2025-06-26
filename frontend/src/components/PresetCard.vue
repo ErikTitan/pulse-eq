@@ -2,8 +2,8 @@
   <div class="preset-card transform transition-all duration-300 hover:scale-102 hover:shadow-lg">
     <Card class="card h-full">
       <template #header>
-        <div class="relative h-32">
-          <Chart type="line" :data="preset.chartData" :options="chartOptions" class="w-full h-full" />
+        <div class="relative h-32 border-b border-surface-200 dark:border-surface-700">
+          <Chart ref="chart" type="line" :data="chartData" :options="chartOptions" class="w-full h-full" />
           <Badge v-if="preset.isStaffPick" value="Staff Pick" class="absolute top-2 right-2" severity="success" />
         </div>
       </template>
@@ -23,7 +23,7 @@
           </div>
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary">
-              {{ preset.usageCount.toLocaleString() }} users
+              {{ (preset.usageCount || 0).toLocaleString() }} users
             </span>
             <div class="flex gap-2">
               <Button icon="pi pi-play" class="p-button-rounded p-button-outlined" @click="$emit('apply', preset)"
@@ -73,12 +73,31 @@ export default {
   },
   emits: ['apply', 'download', 'edit', 'delete'],
   computed: {
-    chartOptions() {
-      const documentStyle = getComputedStyle(document.documentElement);
-      const textColor = documentStyle.getPropertyValue('--p-text-color');
-      const chartColor = this.preset.color || '#4ade80';
-
+    chartData() {
+      let chartColor = this.preset.color || '#4ade80';
+      if (!chartColor.startsWith('#')) {
+        chartColor = `#${chartColor}`;
+      }
       return {
+        ...this.preset.chartData,
+        datasets: this.preset.chartData.datasets.map(dataset => ({
+          ...dataset,
+          borderColor: chartColor,
+        })),
+      };
+    },
+  },
+  watch: {
+    chartData: {
+      handler() {
+        this.redrawChart();
+      },
+      deep: true,
+    },
+  },
+  data() {
+    return {
+      chartOptions: {
         plugins: {
           legend: {
             display: false
@@ -115,24 +134,19 @@ export default {
         maintainAspectRatio: false,
         elements: {
           line: {
-            backgroundColor: (context) => {
-              const chart = context.chart;
-              const { ctx, chartArea } = chart;
-              if (!chartArea) {
-                return null;
-              }
-              const gradient = ctx.createLinearGradient(0, chartArea.bottom, 0, chartArea.top);
-              gradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
-              gradient.addColorStop(1, `${chartColor}33`);
-              return gradient;
-            },
-            fill: true,
           }
         }
       }
-    }
+    };
+  },
+  methods: {
+    redrawChart() {
+      if (this.$refs.chart) {
+        this.$refs.chart.reinit();
+      }
+    },
   }
-}
+};
 </script>
 
 <style scoped>

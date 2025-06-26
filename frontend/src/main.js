@@ -692,4 +692,5 @@ app.use(PrimeVue, {
 })
 
 app.directive('ripple', Ripple)
+
 app.mount('#app')

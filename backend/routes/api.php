@@ -6,9 +6,12 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\PresetController;
 
+use App\Http\Controllers\PresetCategoryController;
+
 // This file is for stateless, token-based API routes.
 
 Route::get('/presets', [PresetController::class, 'index']);
+Route::apiResource('preset-categories', PresetCategoryController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user/presets', [PresetController::class, 'userPresets']);

@@ -157,6 +157,8 @@ export const useAuthStore = defineStore('auth', {
       } finally {
         this.clearAuth()
         this.isLoading = false
+        // Use a full page reload to ensure all state is cleared
+        window.location.href = '/'
       }
     },
 

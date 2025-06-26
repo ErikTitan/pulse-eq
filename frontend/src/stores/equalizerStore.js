@@ -121,8 +121,8 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.updateState()
       }
     },
-    async initializeAudio(audioPath) {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)()
+    async initializeAudio(audioContext, audioPath) {
+      this.audioContext = audioContext;
 
       this.audio = new Audio(audioPath)
       this.source = this.audioContext.createMediaElementSource(this.audio)

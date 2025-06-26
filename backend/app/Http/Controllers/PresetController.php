@@ -12,12 +12,12 @@ class PresetController extends Controller
 
     public function index()
     {
-        return Preset::where('public', true)->get();
+        return Preset::with('presetCategory')->where('public', true)->get();
     }
 
     public function userPresets(Request $request)
     {
-        return $request->user()->presets;
+        return $request->user()->presets()->with('presetCategory')->get();
     }
 
     public function store(Request $request)
@@ -26,7 +26,7 @@ class PresetController extends Controller
             'name' => 'required|string|max:255',
             'settings' => 'required|json',
             'public' => 'boolean',
-            'category' => 'required|string|max:255',
+            'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
         ]);
 
@@ -43,7 +43,7 @@ class PresetController extends Controller
             'name' => 'string|max:255',
             'settings' => 'json',
             'public' => 'boolean',
-            'category' => 'string|max:255',
+            'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
         ]);
 

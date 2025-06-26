@@ -4,14 +4,15 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration {
+return new class extends Migration
+{
     /**
      * Run the migrations.
      */
     public function up(): void
     {
         Schema::table('presets', function (Blueprint $table) {
-            $table->string('color')->default('#4ade80');
+            $table->foreignId('preset_category_id')->constrained()->onDelete('cascade');
         });
     }
 
@@ -21,7 +22,8 @@ return new class extends Migration {
     public function down(): void
     {
         Schema::table('presets', function (Blueprint $table) {
-            $table->dropColumn('color');
+            $table->dropForeign(['preset_category_id']);
+            $table->dropColumn('preset_category_id');
         });
     }
 };

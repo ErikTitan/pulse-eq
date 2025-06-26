@@ -62,16 +62,17 @@ export default {
 
     // Audio initialization and setup
     async initializeAudio() {
+      // Create AudioContext here, once, when the component mounts
+      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
       const audioPath = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href
       const {
-        audioContext,
         analyserNode,
         source,
         weq8,
         nyquist
-      } = await this.equalizerStore.initializeAudio(audioPath)
+      } = await this.equalizerStore.initializeAudio(this.audioContext, audioPath)
 
-      this.audioContext = audioContext
       this.analyserNode = analyserNode
       this.source = source
       this.weq8 = weq8

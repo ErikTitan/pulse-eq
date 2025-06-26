@@ -1,9 +1,11 @@
 <script>
-import NavBar from './components/NavBar.vue'
+import { mapStores } from 'pinia';
+import NavBar from './components/NavBar.vue';
 import FooterComponent from './components/FooterComponent.vue';
 import ScrollTop from 'primevue/scrolltop';
 import { useThemeStore } from './stores/themeStore';
 import { useAuthStore } from './stores/authStore';
+import { usePresetCategoryStore } from './stores/presetCategoryStore';
 
 export default {
   components: {
@@ -11,10 +13,8 @@ export default {
     FooterComponent,
     ScrollTop,
   },
-  setup() {
-    const themeStore = useThemeStore();
-    const authStore = useAuthStore();
-    return { themeStore, authStore };
+  computed: {
+    ...mapStores(useThemeStore, useAuthStore, usePresetCategoryStore),
   },
   methods: {
     handleShowLogin() {
@@ -22,14 +22,14 @@ export default {
     },
     handleShowRegister() {
       this.$refs.navbar.showRegisterDialog();
-    }
+    },
   },
   mounted() {
     // Initialize theme on app startup
     this.themeStore.initializeTheme();
     this.authStore.validateSessionOnStartup();
-  }
-}
+  },
+};
 </script>
 
 <template>
