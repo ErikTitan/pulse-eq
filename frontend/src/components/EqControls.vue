@@ -13,7 +13,7 @@ import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
 import { WEQ8Runtime } from 'weq8';
 
 import { useAuthStore } from '@/stores/authStore';
-import { createPreset } from '@/services/presets';
+import { createPreset } from '@/services/presetService';
 
 export default {
   name: 'EqControls',

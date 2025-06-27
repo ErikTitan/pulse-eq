@@ -8,6 +8,10 @@ use App\Http\Controllers\PresetController;
 
 use App\Http\Controllers\PresetCategoryController;
 
+use App\Http\Controllers\PresetUseController;
+
+use App\Http\Controllers\RatingController;
+
 // This file is for stateless, token-based API routes.
 
 Route::get('/presets', [PresetController::class, 'index']);
@@ -18,4 +22,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/presets', [PresetController::class, 'store']);
     Route::put('/presets/{preset}', [PresetController::class, 'update']);
     Route::delete('/presets/{preset}', [PresetController::class, 'destroy']);
+    Route::post('/presets/{preset}/use', [PresetUseController::class, 'store']);
+    Route::post('/presets/{preset}/rate', [RatingController::class, 'store']);
 });

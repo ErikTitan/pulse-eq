@@ -12,12 +12,16 @@ class PresetController extends Controller
 
     public function index()
     {
-        return Preset::with('presetCategory')->where('public', true)->get();
+        return Preset::with('presetCategory', 'user')
+            ->withCount('uses')
+            ->withAvg('ratings', 'rating')
+            ->where('public', true)
+            ->get();
     }
 
     public function userPresets(Request $request)
     {
-        return $request->user()->presets()->with('presetCategory')->get();
+        return $request->user()->presets()->with('presetCategory', 'user')->get();
     }
 
     public function store(Request $request)

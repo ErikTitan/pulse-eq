@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+use Illuminate\Database\Eloquent\Relations\HasMany;
+
 class Preset extends Model
 {
     use HasFactory;
@@ -30,5 +32,20 @@ class Preset extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function uses(): HasMany
+    {
+        return $this->hasMany(PresetUse::class);
+    }
+
+    public function usedBy(): HasMany
+    {
+        return $this->hasMany(PresetUse::class);
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
     }
 }

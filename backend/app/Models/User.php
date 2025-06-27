@@ -53,4 +53,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Preset::class);
     }
+
+    public function presetUses(): HasMany
+    {
+        return $this->hasMany(PresetUse::class);
+    }
+
+    public function ratings(): HasMany
+    {
+        return $this->hasMany(Rating::class);
+    }
 }

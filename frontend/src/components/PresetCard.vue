@@ -13,7 +13,7 @@
             <h3 class="text-xl font-bold">{{ preset.name }}</h3>
             <p class="text-sm text-text-secondary">by {{ preset.creator }}</p>
           </div>
-          <Rating :modelValue="preset.rating" readonly :cancel="false" />
+          <Rating :modelValue="rating" @update:modelValue="onRate" :readonly="!authStore.isAuthenticated" :cancel="false" />
         </div>
       </template>
       <template #content>
@@ -50,6 +50,8 @@ import Tag from 'primevue/tag'
 import Badge from 'primevue/badge'
 import Rating from 'primevue/rating'
 import Chart from 'primevue/chart'
+import { useAuthStore } from '@/stores/authStore'
+import { ratePreset } from '@/services/presetService'
 
 export default {
   name: 'PresetCard',
@@ -71,32 +73,12 @@ export default {
       default: false
     }
   },
-  emits: ['apply', 'download', 'edit', 'delete'],
-  computed: {
-    chartData() {
-      let chartColor = this.preset.color || '#4ade80';
-      if (!chartColor.startsWith('#')) {
-        chartColor = `#${chartColor}`;
-      }
-      return {
-        ...this.preset.chartData,
-        datasets: this.preset.chartData.datasets.map(dataset => ({
-          ...dataset,
-          borderColor: chartColor,
-        })),
-      };
-    },
-  },
-  watch: {
-    chartData: {
-      handler() {
-        this.redrawChart();
-      },
-      deep: true,
-    },
-  },
+  emits: ['apply', 'download', 'edit', 'delete', 'rate'],
   data() {
+    const authStore = useAuthStore();
     return {
+      authStore,
+      rating: this.preset.rating,
       chartOptions: {
         plugins: {
           legend: {
@@ -139,12 +121,49 @@ export default {
       }
     };
   },
+  computed: {
+    chartData() {
+      let chartColor = this.preset.color || '#4ade80';
+      if (!chartColor.startsWith('#')) {
+        chartColor = `#${chartColor}`;
+      }
+      return {
+        ...this.preset.chartData,
+        datasets: this.preset.chartData.datasets.map(dataset => ({
+          ...dataset,
+          borderColor: chartColor,
+        })),
+      };
+    },
+  },
+  watch: {
+    chartData: {
+      handler() {
+        this.redrawChart();
+      },
+      deep: true,
+    },
+  },
   methods: {
     redrawChart() {
       if (this.$refs.chart) {
         this.$refs.chart.reinit();
       }
     },
+    async onRate(event) {
+      if (!this.authStore.isAuthenticated) {
+        // Optionally, trigger login/register modal
+        return;
+      }
+      try {
+        await ratePreset(this.preset.id, event.value);
+        this.$emit('rate', { presetId: this.preset.id, newRating: event.value });
+      } catch (error) {
+        console.error('Failed to rate preset:', error);
+        // Revert rating on failure
+        this.rating = this.preset.rating;
+      }
+    }
   }
 };
 </script>

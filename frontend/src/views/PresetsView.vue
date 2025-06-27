@@ -5,9 +5,10 @@ import MultiSelect from 'primevue/multiselect';
 import AuthRequired from '@/components/AuthRequired.vue';
 import PresetCard from '@/components/PresetCard.vue';
 import { useAuthStore } from '@/stores/authStore';
-import { getPublicPresets } from '@/services/presets';
+import { usePresetStore } from '@/stores/presetStore';
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
 import { useEqualizerStore } from '@/stores/equalizerStore';
+import { usePreset } from '@/services/presetService';
 
 export default {
   name: 'PresetsGallery',
@@ -28,9 +29,11 @@ export default {
   data() {
     const authStore = useAuthStore();
     const presetCategoryStore = usePresetCategoryStore();
+    const presetStore = usePresetStore();
     return {
       authStore,
       presetCategoryStore,
+      presetStore,
       searchQuery: '',
       selectedCategory: null,
       selectedSort: null,
@@ -47,12 +50,11 @@ export default {
         'Apple AirPods Pro',
         'Sony WH-1000XM4'
       ],
-      presets: [],
     }
   },
   computed: {
     filteredPresets() {
-      let presetsToFilter = this.presets;
+      let presetsToFilter = this.presetStore.presets;
 
       if (this.searchQuery) {
         presetsToFilter = presetsToFilter.filter(preset => {
@@ -63,7 +65,7 @@ export default {
       }
 
       if (this.selectedCategory) {
-        presetsToFilter = presetsToFilter.filter(preset => preset.preset_category_id === this.selectedCategory);
+        presetsToFilter = presetsToFilter.filter(preset => preset.preset_category_id === this.selected.id);
       }
 
       // TODO: Implement sorting and device filtering
@@ -83,12 +85,13 @@ export default {
     }
   },
   methods: {
-    applyPreset(preset) {
+    async applyPreset(preset) {
       try {
         const equalizerStore = useEqualizerStore();
         const settings = JSON.parse(preset.settings);
         equalizerStore.loadPreset(settings);
         this.$router.push('/equalizer');
+        await usePreset(preset.id);
       } catch (error) {
         console.error('Failed to apply preset:', error);
       }
@@ -109,63 +112,12 @@ export default {
         console.error('Failed to download preset:', error);
       }
     },
-    async loadPresets() {
-      try {
-        const response = await getPublicPresets();
-        this.presets = response.data.map(p => {
-          let settingsArray = [];
-          try {
-            if (p.settings && typeof p.settings === 'string') {
-              const parsed = JSON.parse(p.settings);
-              if (Array.isArray(parsed)) {
-                settingsArray = parsed;
-              }
-            }
-          } catch (e) {
-            console.error(`Failed to parse settings for preset ID ${p.id}:`, p.settings, e);
-          }
-
-          const formatFrequency = (freq) => {
-            if (freq >= 1000) {
-              return `${Math.round(freq / 1000)}kHz`;
-            }
-            return `${Math.round(freq)}Hz`;
-          };
-
-          const transformedPreset = {
-            id: p.id,
-            name: p.name || 'Unnamed Preset',
-            creator: p.user?.name || 'Anonymous',
-            preset_category_id: p.preset_category_id,
-            preset_category: p.preset_category || { name: 'General' },
-            tags: p.tags || [],
-            usageCount: p.usage_count || 0,
-            rating: p.rating || 0,
-            isStaffPick: p.is_staff_pick || false,
-            settings: p.settings,
-            public: p.public,
-            color: p.color || '#4ade80',
-            chartData: {
-              labels: settingsArray.map(band => formatFrequency(band.frequency)),
-              datasets: [
-                {
-                  label: 'EQ Curve',
-                  data: settingsArray.map(band => band.gain || 0),
-                  borderColor: p.color || '#4ade80',
-                  tension: 0.4,
-                },
-              ],
-            },
-          };
-          return transformedPreset;
-        });
-      } catch (error) {
-        console.error('Error loading public presets:', error);
-      }
+    handleRating({ presetId, newRating }) {
+      this.presetStore.updatePresetRating(presetId, newRating);
     }
   },
   mounted() {
-    this.loadPresets();
+    this.presetStore.fetchPublicPresets();
   }
 }
 </script>
@@ -189,7 +141,7 @@ export default {
         <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <PresetCard v-for="preset in categoryPresets" :key="preset.id" :preset="preset" @apply="applyPreset"
-            @download="downloadPreset" />
+            @download="downloadPreset" @rate="handleRating" />
         </div>
       </div>
     </div>

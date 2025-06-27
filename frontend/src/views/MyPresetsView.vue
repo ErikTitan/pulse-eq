@@ -67,7 +67,7 @@ import Checkbox from 'primevue/checkbox';
 import ColorPicker from 'primevue/colorpicker';
 import Select from 'primevue/select';
 import PresetCard from '@/components/PresetCard.vue';
-import { getUserPresets, createPreset, updatePreset, deletePreset } from '@/services/presets';
+import { getUserPresets, createPreset, updatePreset, deletePreset } from '@/services/presetService';
 import { useAuthStore } from '@/stores/authStore';
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore';

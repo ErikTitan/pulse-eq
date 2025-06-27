@@ -19,3 +19,11 @@ export const updatePreset = (id, preset) => {
 export const deletePreset = (id) => {
   return axios.delete(`/presets/${id}`);
 };
+
+export const usePreset = (id) => {
+  return axios.post(`/presets/${id}/use`);
+};
+
+export const ratePreset = (id, rating) => {
+  return axios.post(`/presets/${id}/rate`, { rating });
+};
