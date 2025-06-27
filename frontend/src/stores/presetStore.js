@@ -33,6 +33,7 @@ export const usePresetStore = defineStore('preset', {
           const transformedPreset = {
             id: p.id,
             name: p.name || 'Unnamed Preset',
+            description: p.description || '',
             creator: p.user?.name || 'Anonymous',
             preset_category_id: p.preset_category_id,
             preset_category: p.preset_category || { name: 'General' },

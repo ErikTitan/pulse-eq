@@ -18,9 +18,10 @@
       </template>
       <template #content>
         <div class="space-y-4">
-          <div class="flex flex-wrap gap-2">
-            <Tag v-for="tag in preset.tags" :key="tag" :value="tag" class="text-xs" />
-          </div>
+          <p ref="description" class="text-sm text-surface-600 dark:text-surface-400 min-h-[2.5rem]" :class="{ 'line-clamp-2': !isExpanded }">{{ preset.description }}</p>
+          <button v-if="isTruncated" @click="toggleExpanded" class="text-sm text-primary-500 hover:underline">
+            {{ isExpanded ? 'Show less' : 'Show more' }}
+          </button>
           <div class="flex items-center justify-between">
             <span class="text-sm text-text-secondary">
               {{ (preset.usageCount || 0).toLocaleString() }} users
@@ -36,6 +37,9 @@
               <Button v-if="showActions" icon="pi pi-trash" class="p-button-rounded p-button-outlined p-button-danger"
                 @click="$emit('delete', preset)" tooltip="Delete" />
             </div>
+          </div>
+          <div class="flex flex-wrap gap-2 pt-2 border-t border-surface-200 dark:border-surface-700">
+            <Tag v-for="tag in preset.tags" :key="tag.id" :value="tag.name" class="text-xs" />
           </div>
         </div>
       </template>
@@ -79,6 +83,8 @@ export default {
     return {
       authStore,
       rating: this.preset.rating,
+      isExpanded: false,
+      isTruncated: false,
       chartOptions: {
         plugins: {
           legend: {
@@ -144,7 +150,24 @@ export default {
       deep: true,
     },
   },
+  mounted() {
+    this.checkTruncation();
+  },
+  updated() {
+    this.checkTruncation();
+  },
   methods: {
+    checkTruncation() {
+      this.$nextTick(() => {
+        const descriptionEl = this.$refs.description;
+        if (descriptionEl) {
+          this.isTruncated = descriptionEl.scrollHeight > descriptionEl.clientHeight;
+        }
+      });
+    },
+    toggleExpanded() {
+      this.isExpanded = !this.isExpanded;
+    },
     redrawChart() {
       if (this.$refs.chart) {
         this.$refs.chart.reinit();

@@ -30,6 +30,15 @@ export default {
     const authStore = useAuthStore();
     const presetCategoryStore = usePresetCategoryStore();
     const presetStore = usePresetStore();
+    const dummyVariations = [
+      { name: 'Deep Bass Boost', color: '#4ade80', data: [6, 5, 2, 0, -1, -1, 0, 1, 2, 3] },
+      { name: 'Vocal Clarity', color: '#3b82f6', data: [-2, -1, 0, 1, 3, 4, 3, 1, 0, -1] },
+      { name: 'Acoustic Presence', color: '#a855f7', data: [1, 2, 3, 2, 0, -1, 0, 2, 3, 2] },
+      { name: 'Studio Reference', color: '#f97316', data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0] },
+      { name: 'Gaming Immersion', color: '#ef4444', data: [5, 3, 1, -2, -3, -3, -2, 1, 3, 5] },
+      { name: 'Podcast Enhancer', color: '#facc15', data: [-4, -3, -1, 2, 4, 4, 2, 0, -1, -2] }
+    ];
+
     return {
       authStore,
       presetCategoryStore,
@@ -50,10 +59,38 @@ export default {
         'Apple AirPods Pro',
         'Sony WH-1000XM4'
       ],
+      dummyPresets: Array.from({ length: 6 }, (_, i) => {
+        const variation = dummyVariations[i % dummyVariations.length];
+        return {
+          id: `dummy-${i}`,
+          name: variation.name,
+          user: { name: 'Community Member' },
+          rating: Math.floor(Math.random() * 5) + 1,
+          is_public: true,
+          settings: '{}',
+          preset_category: { name: 'Various' },
+          chartData: {
+            labels: ['20', '50', '100', '200', '500', '1k', '2k', '5k', '10k', '20k'],
+            datasets: [
+              {
+                label: 'Gain (dB)',
+                data: variation.data,
+                fill: false,
+                borderColor: variation.color,
+                tension: 0.4
+              }
+            ]
+          }
+        }
+      })
     }
   },
   computed: {
     filteredPresets() {
+      if (!this.authStore.isAuthenticated) {
+        return this.dummyPresets;
+      }
+
       let presetsToFilter = this.presetStore.presets;
 
       if (this.searchQuery) {
@@ -86,6 +123,7 @@ export default {
   },
   methods: {
     async applyPreset(preset) {
+      if (!this.authStore.isAuthenticated) return;
       try {
         const equalizerStore = useEqualizerStore();
         const settings = JSON.parse(preset.settings);
@@ -97,6 +135,7 @@ export default {
       }
     },
     downloadPreset(preset) {
+      if (!this.authStore.isAuthenticated) return;
       try {
         const settings = JSON.stringify(JSON.parse(preset.settings), null, 2);
         const blob = new Blob([settings], { type: 'application/json' });
@@ -113,40 +152,52 @@ export default {
       }
     },
     handleRating({ presetId, newRating }) {
+      if (!this.authStore.isAuthenticated) return;
       this.presetStore.updatePresetRating(presetId, newRating);
     }
   },
   mounted() {
-    this.presetStore.fetchPublicPresets();
+    if (this.authStore.isAuthenticated) {
+      this.presetStore.fetchPublicPresets();
+    }
   }
 }
 </script>
 
 <template>
   <div class="min-h-screen bg-gradient-to-br transition-colors duration-300 flex-1 pt-24 px-6 lg:px-20 relative">
-    <!-- Background content (always visible, blurred when not authenticated) -->
+    <!-- Background content -->
     <div class="container mx-auto px-4 py-8"
       :class="{ 'blur-sm pointer-events-none select-none': !authStore.isAuthenticated }">
       <!-- Filters Section -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <InputText v-model="searchQuery" placeholder="Search presets..." class="input" />
+        <InputText v-model="searchQuery" placeholder="Search presets..." class="input" :disabled="!authStore.isAuthenticated" />
         <Select v-model="selectedCategory" :options="presetCategoryStore.categories" optionLabel="name" optionValue="id"
-          placeholder="Category" class="w-full" />
-        <Select v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by" class="w-full" />
-        <MultiSelect v-model="selectedDevices" :options="devices" placeholder="Compatible devices" class="w-full" />
+          placeholder="Category" class="w-full" :disabled="!authStore.isAuthenticated" />
+        <Select v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by" class="w-full" :disabled="!authStore.isAuthenticated" />
+        <MultiSelect v-model="selectedDevices" :options="devices" placeholder="Compatible devices" class="w-full" :disabled="!authStore.isAuthenticated" />
       </div>
 
       <!-- Presets Grid -->
-      <div v-for="(categoryPresets, categoryName) in groupedPresets" :key="categoryName" class="mb-8">
-        <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
+      <div v-if="authStore.isAuthenticated">
+        <div v-for="(categoryPresets, categoryName) in groupedPresets" :key="categoryName" class="mb-8">
+          <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <PresetCard v-for="preset in categoryPresets" :key="preset.id" :preset="preset" @apply="applyPreset"
+              @download="downloadPreset" @rate="handleRating" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Dummy Presets Grid for non-authenticated users -->
+      <div v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <PresetCard v-for="preset in categoryPresets" :key="preset.id" :preset="preset" @apply="applyPreset"
-            @download="downloadPreset" @rate="handleRating" />
+          <PresetCard v-for="preset in dummyPresets" :key="preset.id" :preset="preset" />
         </div>
       </div>
     </div>
 
-    <!-- AuthRequired Overlay (floating on top when not authenticated) -->
+    <!-- AuthRequired Overlay -->
     <div v-if="!authStore.isAuthenticated"
       class="auth-overlay absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
       <AuthRequired @showLogin="$emit('showLogin')" @showRegister="$emit('showRegister')" />

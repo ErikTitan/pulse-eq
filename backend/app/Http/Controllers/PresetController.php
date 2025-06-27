@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Preset;
+use App\Models\Tag;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -12,7 +13,7 @@ class PresetController extends Controller
 
     public function index()
     {
-        return Preset::with('presetCategory', 'user')
+        return Preset::with('presetCategory', 'user', 'tags')
             ->withCount('uses')
             ->withAvg('ratings', 'rating')
             ->where('public', true)
@@ -21,22 +22,32 @@ class PresetController extends Controller
 
     public function userPresets(Request $request)
     {
-        return $request->user()->presets()->with('presetCategory', 'user')->get();
+        return $request->user()->presets()->with('presetCategory', 'user', 'tags')->get();
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
+            'description' => 'nullable|string|max:100',
             'settings' => 'required|json',
             'public' => 'boolean',
             'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
+            'tags' => 'array',
+            'tags.*' => 'string|max:255',
         ]);
 
         $preset = $request->user()->presets()->create($validated);
 
-        return response()->json($preset, 201);
+        if (isset($validated['tags'])) {
+            $tags = collect($validated['tags'])->map(function ($tagName) {
+                return Tag::firstOrCreate(['name' => $tagName])->id;
+            });
+            $preset->tags()->sync($tags);
+        }
+
+        return response()->json($preset->load('tags'), 201);
     }
 
     public function update(Request $request, Preset $preset)
@@ -45,15 +56,25 @@ class PresetController extends Controller
 
         $validated = $request->validate([
             'name' => 'string|max:255',
+            'description' => 'nullable|string|max:100',
             'settings' => 'json',
             'public' => 'boolean',
             'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
+            'tags' => 'array',
+            'tags.*' => 'string|max:255',
         ]);
 
         $preset->update($validated);
 
-        return response()->json($preset);
+        if (isset($validated['tags'])) {
+            $tags = collect($validated['tags'])->map(function ($tagName) {
+                return Tag::firstOrCreate(['name' => $tagName])->id;
+            });
+            $preset->tags()->sync($tags);
+        }
+
+        return response()->json($preset->load('tags'));
     }
 
     public function destroy(Preset $preset)

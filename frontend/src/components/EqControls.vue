@@ -8,6 +8,7 @@ import FileUpload from 'primevue/fileupload';
 import InputText from 'primevue/inputtext';
 import Checkbox from 'primevue/checkbox';
 import Select from 'primevue/select';
+import AutoComplete from 'primevue/autocomplete';
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
 import { WEQ8Runtime } from 'weq8';
@@ -26,7 +27,8 @@ export default {
     FileUpload,
     InputText,
     Checkbox,
-    Select
+    Select,
+    AutoComplete
   },
   props: {
     weq8: {
@@ -71,13 +73,25 @@ export default {
       importedSettings: '',
       savePresetForm: {
         name: '',
+        description: '',
         preset_category_id: null,
         public: false,
+        tags: [],
       },
+      filteredTags: [],
     }
   },
   emits: ['update:filters', 'update-filter', 'update-weq8'],
   methods: {
+    searchTags(event) {
+      setTimeout(() => {
+        if (!event.query.trim().length) {
+          this.filteredTags = [...this.savePresetForm.tags];
+        } else {
+          this.filteredTags = [event.query.trim()];
+        }
+      }, 250);
+    },
     resetEQ() {
       const defaultFilters = this.equalizerStore.getDefaultFilters();
       const spacedFilters = this.equalizerStore.createSpacedFilters(defaultFilters, this.audioContext);
@@ -123,9 +137,11 @@ export default {
 
         const payload = {
           name: this.savePresetForm.name,
+          description: this.savePresetForm.description,
           preset_category_id: this.savePresetForm.preset_category_id,
           public: this.savePresetForm.public,
           settings: JSON.stringify(settings),
+          tags: this.savePresetForm.tags,
         };
 
         await createPreset(payload);
@@ -140,8 +156,10 @@ export default {
         this.showSaveDialog = false;
         this.savePresetForm = {
           name: '',
+          description: '',
           preset_category_id: null,
           public: false,
+          tags: [],
         };
       } catch (error) {
         this.$toast.add({
@@ -347,6 +365,15 @@ export default {
             <InputText id="preset-name" v-model="savePresetForm.name" />
           </div>
           <div class="flex flex-col gap-2">
+            <label for="preset-description">Description</label>
+            <Textarea id="preset-description" v-model="savePresetForm.description" rows="3" maxlength="100" />
+            <small :class="{ 'text-red-500': savePresetForm.description.length >= 100 }">{{ savePresetForm.description.length }}/100</small>
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="preset-tags">Tags</label>
+            <AutoComplete id="preset-tags" v-model="savePresetForm.tags" :suggestions="filteredTags" @complete="searchTags" multiple separator="," />
+          </div>
+          <div class="flex flex-col gap-2">
             <label for="preset-category">Category</label>
             <Select id="preset-category" v-model="savePresetForm.preset_category_id"
               :options="presetCategoryStore.categories" optionLabel="name" optionValue="id"
@@ -401,3 +428,4 @@ export default {
     </template>
   </Card>
 </template>
+
