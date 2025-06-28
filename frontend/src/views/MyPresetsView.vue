@@ -1,9 +1,13 @@
 <template>
   <div class="min-h-screen flex-1 pt-24 px-6 lg:px-20">
+    <Toast />
     <div class="container mx-auto px-4 py-8">
       <div class="flex justify-between items-center mb-8">
         <h1 class="text-4xl font-bold">My Presets</h1>
-        <Button label="Create Preset" icon="pi pi-plus" @click="showCreateDialog" />
+        <div class="flex gap-2">
+          <Button label="Profile" icon="pi pi-user" @click="showProfileDialog = true" />
+          <Button label="Create Preset" icon="pi pi-plus" @click="showCreateDialog" />
+        </div>
       </div>
 
       <!-- Presets Grid -->
@@ -55,10 +59,29 @@
         </div>
       </div>
     </Dialog>
+
+    <!-- Profile Dialog -->
+    <Dialog v-model:visible="showProfileDialog" header="Edit Profile" :modal="true" class="w-full max-w-md">
+      <form @submit.prevent="updateProfile" class="space-y-4">
+        <div class="flex justify-center">
+          <UserAvatar :user="authStore.user" :label="authStore.avatarLabel" :variant="authStore.avatarVariant" size="xlarge" />
+        </div>
+        <div>
+          <label for="profileName" class="block text-sm font-medium text-gray-300">Name</label>
+          <InputText id="profileName" v-model="profileForm.name" class="w-full" />
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button label="Randomize Avatar" @click="randomizeAvatar" class="p-button-secondary" />
+          <Button label="Cancel" @click="showProfileDialog = false" class="p-button-text" />
+          <Button type="submit" label="Update" />
+        </div>
+      </form>
+    </Dialog>
   </div>
 </template>
 
 <script>
+import Toast from 'primevue/toast';
 import Button from 'primevue/button';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
@@ -67,7 +90,9 @@ import Checkbox from 'primevue/checkbox';
 import ColorPicker from 'primevue/colorpicker';
 import Select from 'primevue/select';
 import PresetCard from '@/components/PresetCard.vue';
+import UserAvatar from '@/components/UserAvatar.vue';
 import { getUserPresets, createPreset, updatePreset, deletePreset } from '@/services/presetService';
+import { updateProfile } from '@/services/userService';
 import { useAuthStore } from '@/stores/authStore';
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
@@ -75,6 +100,7 @@ import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
 export default {
   name: 'MyPresetsView',
   components: {
+    Toast,
     Button,
     Dialog,
     InputText,
@@ -82,15 +108,18 @@ export default {
     Checkbox,
     ColorPicker,
     Select,
-    PresetCard
+    PresetCard,
+    UserAvatar,
   },
   data() {
     const presetCategoryStore = usePresetCategoryStore();
+    const authStore = useAuthStore();
     return {
       presets: [],
       editingPreset: null,
       showPresetDialog: false,
       showDeleteDialog: false,
+      showProfileDialog: false,
       presetToDelete: null,
       presetForm: {
         name: '',
@@ -99,7 +128,11 @@ export default {
         public: false,
         color: '#4ade80',
       },
+      profileForm: {
+        name: authStore.user?.name || '',
+      },
       presetCategoryStore,
+      authStore,
     };
   },
   async created() {
@@ -107,6 +140,9 @@ export default {
     this.presetCategoryStore.fetchPresetCategories();
   },
   methods: {
+    randomizeAvatar() {
+      this.authStore.randomizeAvatar();
+    },
     async fetchPresets() {
       try {
         const authStore = useAuthStore();
@@ -222,8 +258,8 @@ export default {
         await this.fetchPresets();
         this.cancelEdit();
       } catch (error) {
-        console.error('Error saving preset:', error);
-        // Handle error
+        const errorMessage = error.response?.data?.message || 'An error occurred';
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: errorMessage, life: 3000 });
       }
     },
     confirmDelete(preset) {
@@ -237,7 +273,6 @@ export default {
         await this.fetchPresets();
       } catch (error) {
         console.error('Error deleting preset:', error);
-        // Handle error
       } finally {
         this.showDeleteDialog = false;
         this.presetToDelete = null;
@@ -267,6 +302,16 @@ export default {
         URL.revokeObjectURL(url);
       } catch (error) {
         console.error('Failed to download preset:', error);
+      }
+    },
+    async updateProfile() {
+      try {
+        await updateProfile(this.profileForm);
+        await this.authStore.fetchUser(); // Refetch user data
+        this.showProfileDialog = false;
+      } catch (error) {
+        const errorMessage = error.response?.data?.message || 'An error occurred';
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: errorMessage, life: 3000 });
       }
     },
   },

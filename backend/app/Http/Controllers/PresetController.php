@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Preset;
 use App\Models\Tag;
+use App\Rules\AsciiOnly;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 
@@ -28,14 +29,14 @@ class PresetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:100',
+            'name' => ['required', 'string', 'max:255', new AsciiOnly, 'blasp_check'],
+            'description' => ['nullable', 'string', 'max:100', new AsciiOnly, 'blasp_check'],
             'settings' => 'required|json',
             'public' => 'boolean',
             'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
             'tags' => 'array',
-            'tags.*' => 'string|max:255',
+            'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
         ]);
 
         $preset = $request->user()->presets()->create($validated);
@@ -55,14 +56,14 @@ class PresetController extends Controller
         $this->authorize('update', $preset);
 
         $validated = $request->validate([
-            'name' => 'string|max:255',
-            'description' => 'nullable|string|max:100',
+            'name' => ['required', 'string', 'max:255', new AsciiOnly, 'blasp_check'],
+            'description' => ['nullable', 'string', 'max:100', new AsciiOnly, 'blasp_check'],
             'settings' => 'json',
             'public' => 'boolean',
             'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
             'tags' => 'array',
-            'tags.*' => 'string|max:255',
+            'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
         ]);
 
         $preset->update($validated);

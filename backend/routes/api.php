@@ -18,6 +18,8 @@ Route::get('/presets', [PresetController::class, 'index']);
 Route::apiResource('preset-categories', PresetCategoryController::class);
 
 Route::middleware('auth:sanctum')->group(function () {
+    Route::get('/user', [AuthController::class, 'user']);
+    Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::get('/user/presets', [PresetController::class, 'userPresets']);
     Route::post('/presets', [PresetController::class, 'store']);
     Route::put('/presets/{preset}', [PresetController::class, 'update']);
