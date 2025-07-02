@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-
+use App\Http\Controllers\PresetController;
 use App\Http\Controllers\SocialAuthController;
 
 // All stateful, session-based routes are defined here.
@@ -17,9 +17,19 @@ Route::prefix('api')->group(function () {
     Route::middleware('auth')->group(function () {
         Route::get('/user', [AuthController::class, 'user']);
         Route::post('/logout', [AuthController::class, 'logout']);
+
+        // Preset management
+        Route::post('/presets', [PresetController::class, 'store']);
+        Route::put('/presets/{preset}', [PresetController::class, 'update']);
+        Route::delete('/presets/{preset}', [PresetController::class, 'destroy']);
     });
 
     // OAuth routes
     Route::get('/auth/google', [SocialAuthController::class, 'redirectToGoogle'])->name('login.google');
     Route::get('/auth/google/callback', [SocialAuthController::class, 'handleGoogleCallback']);
 });
+
+// Catch-all route to serve the Vue.js frontend
+Route::get('/{any}', function () {
+    return view('welcome'); // Point to the existing 'welcome.blade.php' view
+})->where('any', '.*');

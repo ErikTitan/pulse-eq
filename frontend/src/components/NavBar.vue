@@ -41,6 +41,7 @@ export default {
       isScrolled: false,
       authDialogVisible: false,
       authDialogMode: 'login',
+      isAvatarMenuOpen: false,
     };
   },
   computed: {
@@ -56,7 +57,6 @@ export default {
     isDarkMode() {
       return this.themeStore.isDarkMode;
     },
-    // Derive auth requirements from router - single source of truth
     itemsWithAuth() {
       return this.items.map(item => ({
         ...item,
@@ -65,7 +65,7 @@ export default {
     }
   },
   methods: {
-    // Get auth requirement from router meta - single source of truth
+    // Get auth requirement from router meta
     getRouteAuthRequirement(routePath) {
       try {
         const route = this.$router.resolve(routePath);
@@ -107,6 +107,30 @@ export default {
     },
     async handleLogout() {
       await this.authStore.logout();
+    },
+    toggleAvatarMenu(event) {
+      event.stopPropagation();
+      this.isAvatarMenuOpen = !this.isAvatarMenuOpen;
+    },
+    closeAvatarMenu() {
+      this.isAvatarMenuOpen = false;
+    },
+    handleClickOutside(event) {
+      if (!this.$el.querySelector('.avatar-container').contains(event.target)) {
+        this.closeAvatarMenu();
+      }
+    },
+    navigateToMyPresets() {
+      this.$router.push('/my-presets');
+      this.closeAvatarMenu();
+    },
+    toggleThemeFromMenu() {
+      this.themeStore.toggleDarkMode();
+      this.closeAvatarMenu();
+    },
+    async logoutFromMenu() {
+      await this.authStore.logout();
+      this.closeAvatarMenu();
     }
   },
   mounted() {
@@ -114,6 +138,7 @@ export default {
     this.themeStore.initializeTheme();
 
     window.addEventListener('scroll', this.handleScroll);
+    document.addEventListener('click', this.handleClickOutside);
 
     // Check if user was redirected here for login
     if (this.$route.query.showLogin === 'true') {
@@ -122,6 +147,7 @@ export default {
   },
   beforeUnmount() {
     window.removeEventListener('scroll', this.handleScroll);
+    document.removeEventListener('click', this.handleClickOutside);
   },
 };
 </script>
@@ -175,9 +201,44 @@ export default {
           </template>
           <template v-else>
             <!-- Avatar with dropdown menu -->
-            <div class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
-              :class="isScrolled ? 'rounded-lg' : 'rounded-none'">
-              <UserAvatar :user="userData" size="small" />
+            <div class="avatar-container relative">
+              <button @click="toggleAvatarMenu"
+                class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
+                :class="isScrolled ? 'rounded-lg' : 'rounded-none'">
+                <UserAvatar :user="userData" size="small" />
+              </button>
+
+              <!-- Avatar dropdown menu -->
+              <div v-if="isAvatarMenuOpen" :class="[
+                'absolute right-0 top-full mt-2 w-48 rounded-lg shadow-lg py-1 z-50',
+                isDarkMode ? 'bg-surface-900 border-primary-900' : 'bg-white border-gray-200'
+              ]">
+                <button @click="navigateToMyPresets" :class="[
+                  'w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors duration-150',
+                  isDarkMode ? 'text-gray-200 hover:bg-surface-800' : 'text-gray-700 hover:bg-gray-50'
+                ]">
+                  <i class="pi pi-sliders-h text-sm"></i>
+                  <span>My Presets</span>
+                </button>
+
+                <button @click="toggleThemeFromMenu" :class="[
+                  'w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors duration-150',
+                  isDarkMode ? 'text-gray-200 hover:bg-surface-800' : 'text-gray-700 hover:bg-gray-50'
+                ]">
+                  <i :class="isDarkMode ? 'pi pi-sun' : 'pi pi-moon'" class="text-sm"></i>
+                  <span>Toggle Theme</span>
+                </button>
+
+                <hr :class="['my-1', isDarkMode ? 'border-gray-600' : 'border-gray-200']" />
+
+                <button @click="logoutFromMenu" :class="[
+                  'w-full px-4 py-2 text-left text-sm flex items-center gap-3 transition-colors duration-150',
+                  isDarkMode ? 'text-gray-200 hover:bg-gray-800' : 'text-gray-700 hover:bg-gray-50'
+                ]">
+                  <i class="pi pi-sign-out text-sm"></i>
+                  <span>Logout</span>
+                </button>
+              </div>
             </div>
           </template>
         </div>

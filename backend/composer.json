@@ -8,7 +8,7 @@
     "require": {
         "php": "^8.2",
         "blaspsoft/blasp": "^2.1",
-        "laravel/framework": "^12.0",
+        "laravel/framework": "^12.1.1",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.21",
         "laravel/tinker": "^2.10.1"

@@ -1,14 +1,10 @@
 <script>
 import Avatar from 'vue-boring-avatars';
-import Menu from 'primevue/menu';
-import { useAuthStore } from '@/stores/authStore';
-import { useThemeStore } from '@/stores/themeStore';
 
 export default {
   name: 'UserAvatar',
   components: {
     Avatar,
-    Menu,
   },
   props: {
     user: {
@@ -24,41 +20,6 @@ export default {
       type: String,
       validator: (value) => ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
     },
-  },
-  setup() {
-    const authStore = useAuthStore();
-    const themeStore = useThemeStore();
-    return { authStore, themeStore };
-  },
-  data() {
-    return {
-      menuItems: [
-        {
-          label: 'My Presets',
-          icon: 'pi pi-sliders-h',
-          command: () => {
-            this.$router.push('/my-presets');
-          },
-        },
-        {
-          label: 'Toggle Theme',
-          icon: this.themeStore.isDarkMode ? 'pi pi-sun' : 'pi pi-moon',
-          command: () => {
-            this.themeStore.toggleDarkMode();
-          },
-        },
-        {
-          separator: true,
-        },
-        {
-          label: 'Logout',
-          icon: 'pi pi-sign-out',
-          command: () => {
-            this.authStore.logout();
-          },
-        },
-      ],
-    };
   },
   computed: {
     avatarSize() {
@@ -101,16 +62,6 @@ export default {
       return variants[index];
     },
   },
-  methods: {
-    toggleMenu(event) {
-      this.$refs.menu.toggle(event);
-    },
-  },
-  watch: {
-    'themeStore.isDarkMode'(newVal) {
-      this.menuItems[1].icon = newVal ? 'pi pi-sun' : 'pi pi-moon';
-    },
-  },
 };
 </script>
 
@@ -119,7 +70,19 @@ export default {
     <button @click="toggleMenu" class="avatar-wrapper">
       <Avatar :size="avatarSize" :name="userName" :variant="finalVariant" :colors="colorPalette" :title="true" />
     </button>
-    <Menu ref="menu" :model="menuItems" :popup="true" />
+
+    <!-- Custom dropdown menu -->
+    <div v-if="isMenuOpen"
+      class="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-10">
+      <template v-for="(item, index) in menuItems" :key="index">
+        <hr v-if="item.separator" class="my-1 border-gray-200 dark:border-gray-700" />
+        <button v-else @click="item.action"
+          class="w-full px-4 py-2 text-left text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3 transition-colors duration-150">
+          <i :class="item.icon" class="text-sm"></i>
+          <span>{{ item.label }}</span>
+        </button>
+      </template>
+    </div>
   </div>
 </template>
 
