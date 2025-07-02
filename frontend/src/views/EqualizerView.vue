@@ -11,6 +11,7 @@ import ResponseCanvas from '@/components/ResponseCanvas.vue';
 import FilterHandles from '@/components/FilterHandles.vue';
 import BandControls from '@/components/BandControls.vue';
 import EqControls from '@/components/EqControls.vue';
+import FrequencyRegions from '@/components/FrequencyRegions.vue';
 
 export default {
   name: 'Equalizer',
@@ -23,7 +24,8 @@ export default {
     ResponseCanvas,
     FilterHandles,
     BandControls,
-    EqControls
+    EqControls,
+    FrequencyRegions
   },
   data() {
     const equalizerStore = useEqualizerStore();
@@ -46,6 +48,8 @@ export default {
       selectedPoint: null,
       devicePixelRatio: window.devicePixelRatio || 1,
       nyquist: 20000,
+      showFrequencyRegions: false,
+      highlightedRange: null,
     }
   },
   methods: {
@@ -60,9 +64,7 @@ export default {
       this.equalizerStore.resetFilter(index);
     },
 
-    // Audio initialization and setup
     async initializeAudio() {
-      // Create AudioContext here, once, when the component mounts
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
 
       const audioPath = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href
@@ -118,6 +120,15 @@ export default {
       this.equalizerStore.pauseAudio()
     },
 
+    // Frequency region methods
+    toggleFrequencyRegions() {
+      this.showFrequencyRegions = !this.showFrequencyRegions;
+    },
+
+    handleHighlightRegion(range) {
+      this.highlightedRange = range;
+    },
+
   },
 
   async mounted() {
@@ -151,9 +162,10 @@ export default {
             <template #content>
               <div class="flex flex-col items-center justify-center h-full">
                 <div ref="eqContainer"
-                  class="border w-full h-[40vh] md:h-[50vh] lg:h-[60vh] relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
+                  class="border-2 border-gray-300 dark:border-gray-600 w-full h-[40vh] md:h-[50vh] lg:h-[60vh] relative mb-6 bg-gray-900 rounded-lg overflow-hidden"
                   style="background-color: var(--eq-background)">
-                  <GridCanvas :nyquist="nyquist" :device-pixel-ratio="devicePixelRatio" />
+                  <GridCanvas :nyquist="nyquist" :device-pixel-ratio="devicePixelRatio"
+                    :highlighted-range="highlightedRange" />
                   <AnalyzerCanvas v-if="analyserNode" :analyser-node="analyserNode" :nyquist="nyquist"
                     :device-pixel-ratio="devicePixelRatio" />
                   <ResponseCanvas :weq8="weq8" :filters="equalizerStore.filters" :nyquist="nyquist"
@@ -164,11 +176,20 @@ export default {
                     @pointermove="handleDrag" @pointerup="stopDragging" @pointercancel="stopDragging"
                     @wheel="handleFilterScroll" />
                 </div>
-                <div class="flex gap-4">
+                <div class="flex gap-4 items-center">
                   <Button icon="pi pi-play" severity="success" @click="playAudio" />
                   <Button icon="pi pi-pause" severity="secondary" @click="pauseAudio" />
+                  <Button :label="showFrequencyRegions ? 'Hide Frequency Regions' : 'Show Frequency Regions'"
+                    icon="pi pi-chart-bar" severity="info" @click="toggleFrequencyRegions" />
                 </div>
               </div>
+            </template>
+          </Card>
+
+          <!-- Frequency Regions -->
+          <Card v-if="showFrequencyRegions" class="shadow-xl">
+            <template #content>
+              <FrequencyRegions @highlight-region="handleHighlightRegion" />
             </template>
           </Card>
 
