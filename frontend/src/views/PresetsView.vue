@@ -4,6 +4,7 @@ import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect';
 import AuthRequired from '@/components/AuthRequired.vue';
 import PresetCard from '@/components/PresetCard.vue';
+import PresetPreviewModal from '@/components/PresetPreviewModal.vue';
 import { useAuthStore } from '@/stores/authStore';
 import { usePresetStore } from '@/stores/presetStore';
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore';
@@ -19,6 +20,7 @@ export default {
     MultiSelect,
     AuthRequired,
     PresetCard,
+    PresetPreviewModal,
   },
   props: {
     isDarkMode: {
@@ -47,6 +49,8 @@ export default {
       selectedCategory: null,
       selectedSort: null,
       selectedDevices: [],
+      showPreviewModal: false,
+      selectedPresetForModal: null,
       sortOptions: [
         { name: 'Popular', value: 'popular' },
         { name: 'New', value: 'new' },
@@ -122,18 +126,6 @@ export default {
     }
   },
   methods: {
-    async applyPreset(preset) {
-      if (!this.authStore.isAuthenticated) return;
-      try {
-        const equalizerStore = useEqualizerStore();
-        const settings = JSON.parse(preset.settings);
-        equalizerStore.loadPreset(settings);
-        this.$router.push('/equalizer');
-        await usePreset(preset.id);
-      } catch (error) {
-        console.error('Failed to apply preset:', error);
-      }
-    },
     downloadPreset(preset) {
       if (!this.authStore.isAuthenticated) return;
       try {
@@ -154,6 +146,14 @@ export default {
     handleRating({ presetId, newRating }) {
       if (!this.authStore.isAuthenticated) return;
       this.presetStore.updatePresetRating(presetId, newRating);
+    },
+    openPresetModal(preset) {
+      this.selectedPresetForModal = preset;
+      this.showPreviewModal = true;
+    },
+    closePresetModal() {
+      this.showPreviewModal = false;
+      this.selectedPresetForModal = null;
     }
   },
   mounted() {
@@ -171,11 +171,14 @@ export default {
       :class="{ 'blur-sm pointer-events-none select-none': !authStore.isAuthenticated }">
       <!-- Filters Section -->
       <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <InputText v-model="searchQuery" placeholder="Search presets..." class="input" :disabled="!authStore.isAuthenticated" />
+        <InputText v-model="searchQuery" placeholder="Search presets..." class="input"
+          :disabled="!authStore.isAuthenticated" />
         <Select v-model="selectedCategory" :options="presetCategoryStore.categories" optionLabel="name" optionValue="id"
           placeholder="Category" class="w-full" :disabled="!authStore.isAuthenticated" />
-        <Select v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by" class="w-full" :disabled="!authStore.isAuthenticated" />
-        <MultiSelect v-model="selectedDevices" :options="devices" placeholder="Compatible devices" class="w-full" :disabled="!authStore.isAuthenticated" />
+        <Select v-model="selectedSort" :options="sortOptions" optionLabel="name" placeholder="Sort by" class="w-full"
+          :disabled="!authStore.isAuthenticated" />
+        <MultiSelect v-model="selectedDevices" :options="devices" placeholder="Compatible devices" class="w-full"
+          :disabled="!authStore.isAuthenticated" />
       </div>
 
       <!-- Presets Grid -->
@@ -183,8 +186,10 @@ export default {
         <div v-for="(categoryPresets, categoryName) in groupedPresets" :key="categoryName" class="mb-8">
           <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <PresetCard v-for="preset in categoryPresets" :key="preset.id" :preset="preset" @apply="applyPreset"
-              @download="downloadPreset" @rate="handleRating" />
+            <div v-for="preset in categoryPresets" :key="preset.id"
+              class="block transition-transform hover:scale-105 cursor-pointer" @click="openPresetModal(preset)">
+              <PresetCard :preset="preset" @download="downloadPreset" @rate="handleRating" />
+            </div>
           </div>
         </div>
       </div>
@@ -202,6 +207,10 @@ export default {
       class="auth-overlay absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
       <AuthRequired @showLogin="$emit('showLogin')" @showRegister="$emit('showRegister')" />
     </div>
+
+    <!-- Preset Preview Modal -->
+    <PresetPreviewModal :visible="showPreviewModal" :preset="selectedPresetForModal" @close="closePresetModal"
+      @download="downloadPreset" />
   </div>
 </template>
 

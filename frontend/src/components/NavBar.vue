@@ -116,7 +116,7 @@ export default {
       this.isAvatarMenuOpen = false;
     },
     handleClickOutside(event) {
-      if (!this.$el.querySelector('.avatar-container').contains(event.target)) {
+      if (this.$refs.avatarContainer && !this.$refs.avatarContainer.contains(event.target)) {
         this.closeAvatarMenu();
       }
     },
@@ -201,7 +201,7 @@ export default {
           </template>
           <template v-else>
             <!-- Avatar with dropdown menu -->
-            <div class="avatar-container relative">
+            <div ref="avatarContainer" class="avatar-container relative">
               <button @click="toggleAvatarMenu"
                 class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
                 :class="isScrolled ? 'rounded-lg' : 'rounded-none'">

@@ -1,5 +1,5 @@
-import { defineStore } from 'pinia';
-import { getPublicPresets } from '@/services/presetService';
+import { defineStore } from 'pinia'
+import { getPublicPresets } from '@/services/presetService'
 
 export const usePresetStore = defineStore('preset', {
   state: () => ({
@@ -8,31 +8,32 @@ export const usePresetStore = defineStore('preset', {
   actions: {
     async fetchPublicPresets() {
       try {
-        const response = await getPublicPresets();
-        console.log('Raw presets from API:', response.data);
-        this.presets = response.data.map(p => {
-          let settingsArray = [];
+        const response = await getPublicPresets()
+        console.log('Raw presets from API:', response.data)
+        this.presets = response.data.map((p) => {
+          let settingsArray = []
           try {
             if (p.settings && typeof p.settings === 'string') {
-              const parsed = JSON.parse(p.settings);
+              const parsed = JSON.parse(p.settings)
               if (Array.isArray(parsed)) {
-                settingsArray = parsed;
+                settingsArray = parsed
               }
             }
           } catch (e) {
-            console.error(`Failed to parse settings for preset ID ${p.id}:`, p.settings, e);
+            console.error(`Failed to parse settings for preset ID ${p.id}:`, p.settings, e)
           }
 
           const formatFrequency = (freq) => {
             if (freq >= 1000) {
-              return `${Math.round(freq / 1000)}kHz`;
+              return `${Math.round(freq / 1000)}kHz`
             }
-            return `${Math.round(freq)}Hz`;
-          };
+            return `${Math.round(freq)}Hz`
+          }
 
           const transformedPreset = {
             id: p.id,
             name: p.name || 'Unnamed Preset',
+            slug: p.slug,
             description: p.description || '',
             creator: p.user?.name || 'Anonymous',
             preset_category_id: p.preset_category_id,
@@ -45,28 +46,41 @@ export const usePresetStore = defineStore('preset', {
             public: p.public,
             color: p.color || '#4ade80',
             chartData: {
-              labels: settingsArray.map(band => formatFrequency(band.frequency)),
+              labels: settingsArray.map((band) => formatFrequency(band.frequency)),
               datasets: [
                 {
                   label: 'EQ Curve',
-                  data: settingsArray.map(band => band.gain || 0),
+                  data: settingsArray.map((band) => band.gain || 0),
                   borderColor: p.color || '#4ade80',
                   tension: 0.4,
                 },
               ],
             },
-          };
-          return transformedPreset;
-        });
+          }
+          return transformedPreset
+        })
       } catch (error) {
-        console.error('Error loading public presets:', error);
+        console.error('Error loading public presets:', error)
       }
     },
     updatePresetRating(presetId, newRating) {
-      const preset = this.presets.find(p => p.id === presetId);
+      const preset = this.presets.find((p) => p.id === presetId)
       if (preset) {
-        preset.rating = newRating;
+        preset.rating = newRating
+      }
+    },
+    async applyPreset(settings) {
+      // Delegate to equalizer store
+      const { useEqualizerStore } = await import('./equalizerStore')
+      const equalizerStore = useEqualizerStore()
+
+      try {
+        const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings
+        equalizerStore.loadPreset(parsedSettings)
+      } catch (error) {
+        console.error('Failed to apply preset:', error)
+        throw error
       }
     },
   },
-});
+})

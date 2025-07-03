@@ -64,7 +64,8 @@
     <Dialog v-model:visible="showProfileDialog" header="Edit Profile" :modal="true" class="w-full max-w-md">
       <form @submit.prevent="updateProfile" class="space-y-4">
         <div class="flex justify-center">
-          <UserAvatar :user="authStore.user" :label="authStore.avatarLabel" :variant="authStore.avatarVariant" size="xlarge" />
+          <UserAvatar :user="authStore.user" :label="authStore.avatarLabel" :variant="authStore.avatarVariant"
+            size="xlarge" />
         </div>
         <div>
           <label for="profileName" class="block text-sm font-medium text-gray-300">Name</label>
@@ -176,6 +177,7 @@ export default {
           const transformedPreset = {
             id: p.id,
             name: p.name || 'Unnamed Preset',
+            slug: p.slug,
             creator: authStore.user?.name || 'You',
             preset_category_id: p.preset_category_id,
             preset_category: p.preset_category || { name: 'General' },

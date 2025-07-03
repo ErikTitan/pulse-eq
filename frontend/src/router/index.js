@@ -8,6 +8,7 @@ import MyPresetsView from '@/views/MyPresetsView.vue'
 import NotFound from '@/views/NotFound.vue'
 import Features from '@/views/Features.vue'
 import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
+import PresetDetailView from '../views/PresetDetailView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -52,6 +53,13 @@ const router = createRouter({
       path: '/oauth-callback',
       name: 'oauth-callback',
       component: OAuthCallbackView,
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/preset/:slug',
+      name: 'PresetDetail',
+      component: PresetDetailView,
+      props: true,
       meta: { requiresAuth: false },
     },
     {

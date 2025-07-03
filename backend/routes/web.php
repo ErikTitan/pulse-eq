@@ -4,7 +4,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\PresetController;
+use App\Http\Controllers\SitemapController;
 use App\Http\Controllers\SocialAuthController;
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index']);
 
 // All stateful, session-based routes are defined here.
 // The '/api' prefix is added to maintain compatibility with the frontend.

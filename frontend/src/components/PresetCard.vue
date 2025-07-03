@@ -27,10 +27,8 @@
               {{ (preset.usageCount || 0).toLocaleString() }} users
             </span>
             <div class="flex gap-2">
-              <Button icon="pi pi-play" class="p-button-rounded p-button-outlined" @click="$emit('apply', preset)"
-                tooltip="Quick Apply" />
               <Button icon="pi pi-download" class="p-button-rounded p-button-outlined"
-                @click="$emit('download', preset)" tooltip="Download" />
+                @click.prevent="$emit('download', preset)" tooltip="Download" />
               <Button v-if="showActions" icon="pi pi-pencil"
                 class="p-button-rounded p-button-outlined p-button-secondary" @click="$emit('edit', preset)"
                 tooltip="Edit" />
@@ -77,7 +75,7 @@ export default {
       default: false
     }
   },
-  emits: ['apply', 'download', 'edit', 'delete', 'rate'],
+  emits: ['download', 'edit', 'delete', 'rate'],
   data() {
     const authStore = useAuthStore();
     return {

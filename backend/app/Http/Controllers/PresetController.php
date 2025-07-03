@@ -86,4 +86,10 @@ class PresetController extends Controller
 
         return response()->json(null, 204);
     }
+
+    public function showBySlug(Preset $preset)
+    {
+        // The preset is already fetched by route model binding
+        return response()->json($preset->load('presetCategory', 'user', 'tags'));
+    }
 }

@@ -14,6 +14,7 @@ use App\Http\Controllers\RatingController;
 
 // This file is for stateless, token-based API routes.
 
+Route::get('/presets/slug/{preset:slug}', [PresetController::class, 'showBySlug']);
 Route::get('/presets', [PresetController::class, 'index']);
 Route::apiResource('preset-categories', PresetCategoryController::class);
 
