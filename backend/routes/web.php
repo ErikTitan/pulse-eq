@@ -23,8 +23,8 @@ Route::prefix('api')->group(function () {
 
         // Preset management
         Route::post('/presets', [PresetController::class, 'store']);
-        Route::put('/presets/{preset}', [PresetController::class, 'update']);
-        Route::delete('/presets/{preset}', [PresetController::class, 'destroy']);
+        Route::put('/presets/{preset:slug}', [PresetController::class, 'update']);
+        Route::delete('/presets/{preset:slug}', [PresetController::class, 'destroy']);
     });
 
     // OAuth routes

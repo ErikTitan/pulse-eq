@@ -253,7 +253,7 @@ export default {
         };
 
         if (this.editingPreset) {
-          await updatePreset(this.editingPreset.id, payload);
+          await updatePreset(this.editingPreset.slug, payload);
         } else {
           await createPreset(payload);
         }
@@ -271,7 +271,7 @@ export default {
     async deleteConfirmed() {
       if (!this.presetToDelete) return;
       try {
-        await deletePreset(this.presetToDelete.id);
+        await deletePreset(this.presetToDelete.slug);
         await this.fetchPresets();
       } catch (error) {
         console.error('Error deleting preset:', error);

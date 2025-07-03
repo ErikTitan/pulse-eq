@@ -22,6 +22,6 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/user', [AuthController::class, 'user']);
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::get('/user/presets', [PresetController::class, 'userPresets']);
-    Route::post('/presets/{preset}/use', [PresetUseController::class, 'store']);
-    Route::post('/presets/{preset}/rate', [RatingController::class, 'store']);
+    Route::post('/presets/{preset:slug}/use', [PresetUseController::class, 'store']);
+    Route::post('/presets/{preset:slug}/rate', [RatingController::class, 'store']);
 });
