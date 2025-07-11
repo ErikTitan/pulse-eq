@@ -18,10 +18,15 @@ class PresetPolicy
 
     /**
      * Determine whether the user can view the model.
+     *
+     * Note: This policy is intentionally NOT applied to the showBySlug route
+     * to allow public access for SEO purposes and link sharing. The showBySlug
+     * route should remain publicly accessible even for private presets when
+     * accessed via direct link.
      */
     public function view(User $user, Preset $preset): bool
     {
-        return true;
+        return $preset->public || $user->id === $preset->user_id;
     }
 
     /**

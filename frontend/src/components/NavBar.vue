@@ -205,7 +205,7 @@ export default {
               <button @click="toggleAvatarMenu"
                 class="avatar-btn !w-9 !h-9 overflow-hidden flex items-center justify-center"
                 :class="isScrolled ? 'rounded-lg' : 'rounded-none'">
-                <UserAvatar :user="userData" size="small" />
+                <UserAvatar :user="userData" size="small" :variant="authStore.avatarVariant" />
               </button>
 
               <!-- Avatar dropdown menu -->

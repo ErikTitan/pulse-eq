@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Preset;
 use App\Models\Tag;
+use App\Models\PresetCategory;
 use App\Rules\AsciiOnly;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Mews\Purifier\Facades\Purifier;
 
 class PresetController extends Controller
 {
@@ -29,21 +32,30 @@ class PresetController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', new AsciiOnly, 'blasp_check'],
-            'description' => ['nullable', 'string', 'max:100', new AsciiOnly, 'blasp_check'],
+            'name' => ['required', 'string', 'max:50', new AsciiOnly, 'blasp_check'],
+            'description' => ['nullable', 'string', 'max:80', new AsciiOnly, 'blasp_check'],
             'settings' => 'required|json',
             'public' => 'boolean',
             'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
-            'tags' => 'array',
+            'tags' => 'required|array|min:1',
             'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
         ]);
+
+        // Sanitize user input
+        if (isset($validated['name'])) {
+            $validated['name'] = Purifier::clean($validated['name'], 'strict');
+        }
+        if (isset($validated['description'])) {
+            $validated['description'] = Purifier::clean($validated['description'], 'strict');
+        }
 
         $preset = $request->user()->presets()->create($validated);
 
         if (isset($validated['tags'])) {
             $tags = collect($validated['tags'])->map(function ($tagName) {
-                return Tag::firstOrCreate(['name' => $tagName])->id;
+                $cleanTagName = Purifier::clean($tagName, 'strict');
+                return Tag::firstOrCreate(['name' => $cleanTagName])->id;
             });
             $preset->tags()->sync($tags);
         }
@@ -56,21 +68,30 @@ class PresetController extends Controller
         $this->authorize('update', $preset);
 
         $validated = $request->validate([
-            'name' => ['required', 'string', 'max:255', new AsciiOnly, 'blasp_check'],
-            'description' => ['nullable', 'string', 'max:100', new AsciiOnly, 'blasp_check'],
+            'name' => ['sometimes', 'string', 'max:50', new AsciiOnly, 'blasp_check'],
+            'description' => ['nullable', 'string', 'max:80', new AsciiOnly, 'blasp_check'],
             'settings' => 'json',
             'public' => 'boolean',
             'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
-            'tags' => 'array',
+            'tags' => 'required|array|min:1',
             'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
         ]);
+
+        // Sanitize user input
+        if (isset($validated['name'])) {
+            $validated['name'] = Purifier::clean($validated['name'], 'strict');
+        }
+        if (isset($validated['description'])) {
+            $validated['description'] = Purifier::clean($validated['description'], 'strict');
+        }
 
         $preset->update($validated);
 
         if (isset($validated['tags'])) {
             $tags = collect($validated['tags'])->map(function ($tagName) {
-                return Tag::firstOrCreate(['name' => $tagName])->id;
+                $cleanTagName = Purifier::clean($tagName, 'strict');
+                return Tag::firstOrCreate(['name' => $cleanTagName])->id;
             });
             $preset->tags()->sync($tags);
         }

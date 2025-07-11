@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', {
     isAuthenticated: false,
     isLoading: false,
     error: null,
+    avatarVariant: 'bauhaus',
   }),
 
   getters: {
@@ -26,6 +27,10 @@ export const useAuthStore = defineStore('auth', {
   },
 
   actions: {
+    randomizeAvatar() {
+      const variants = ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset']
+      this.avatarVariant = variants[Math.floor(Math.random() * variants.length)]
+    },
     // Validates the session on app startup to ensure the UI reflects the true auth state.
     async validateSessionOnStartup() {
       // Only validate if isAuthenticated is true (from localStorage) but we don't have user data yet.
@@ -182,6 +187,7 @@ export const useAuthStore = defineStore('auth', {
         if (response.data) {
           this.user = response.data
           this.isAuthenticated = true
+          this.avatarVariant = response.data.avatar_variant || 'bauhaus'
           console.log('User data fetched successfully:', this.user)
           return { success: true, user: this.user }
         }

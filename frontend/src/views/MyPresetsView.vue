@@ -12,8 +12,9 @@
 
       <!-- Presets Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <PresetCard v-for="preset in presets" :key="preset.id" :preset="preset" :show-actions="true" @edit="editPreset"
-          @delete="confirmDelete" @apply="applyPreset" @download="downloadPreset" />
+        <PresetCard v-for="preset in presets" :key="preset.id" :preset="preset" :show-actions="true"
+          :show-user-avatar="false" @edit="editPreset" @delete="confirmDelete" @apply="applyPreset"
+          @download="downloadPreset" />
       </div>
     </div>
 
@@ -23,12 +24,18 @@
       <form @submit.prevent="savePreset" class="space-y-4">
         <div>
           <label for="name" class="block text-sm font-medium text-gray-300">Name</label>
-          <InputText id="name" v-model="presetForm.name" class="w-full" />
+          <InputText id="name" v-model="presetForm.name" class="w-full" maxlength="50" />
+          <small class="text-xs text-gray-400">{{ presetForm.name.length }}/50 characters</small>
         </div>
         <div>
           <label for="category" class="block text-sm font-medium text-gray-300">Category</label>
           <Select id="category" v-model="presetForm.preset_category_id" :options="presetCategoryStore.categories"
             optionLabel="name" optionValue="id" placeholder="Select a Category" class="w-full" />
+        </div>
+        <div>
+          <label for="description" class="block text-sm font-medium text-gray-300">Description</label>
+          <Textarea id="description" v-model="presetForm.description" class="w-full" rows="2" maxlength="80" />
+          <small class="text-xs text-gray-400">{{ (presetForm.description || '').length }}/80 characters</small>
         </div>
         <div>
           <label for="settings" class="block text-sm font-medium text-gray-300">Settings (JSON)</label>
@@ -39,12 +46,18 @@
           <label for="public" class="ml-2 text-sm text-gray-300">Public</label>
         </div>
         <div>
+          <label for="tags" class="block text-sm font-medium text-gray-300">Tags (Required)</label>
+          <InputText id="tags" v-model="presetForm.tagsInput"
+            placeholder="Enter tags separated by commas (e.g. bass, gaming, vocal)" class="w-full" />
+          <small class="text-xs text-gray-400">Separate multiple tags with commas</small>
+        </div>
+        <div>
           <label for="color" class="block text-sm font-medium text-gray-300">Chart Color</label>
           <ColorPicker id="color" v-model="presetForm.color" />
         </div>
         <div class="flex justify-end gap-2">
           <Button label="Cancel" @click="cancelEdit" class="p-button-text" />
-          <Button type="submit" :label="editingPreset ? 'Update' : 'Create'" />
+          <Button type="submit" :label="editingPreset ? 'Update' : 'Create'" :loading="isSavingPreset" />
         </div>
       </form>
     </Dialog>
@@ -74,7 +87,7 @@
         <div class="flex justify-end gap-2">
           <Button label="Randomize Avatar" @click="randomizeAvatar" class="p-button-secondary" />
           <Button label="Cancel" @click="showProfileDialog = false" class="p-button-text" />
-          <Button type="submit" label="Update" />
+          <Button type="submit" label="Update" :loading="isUpdatingProfile" />
         </div>
       </form>
     </Dialog>
@@ -122,16 +135,20 @@ export default {
       showDeleteDialog: false,
       showProfileDialog: false,
       presetToDelete: null,
+      isSavingPreset: false,
       presetForm: {
         name: '',
+        description: '',
         preset_category_id: null,
         settings: '',
         public: false,
         color: '#4ade80',
+        tagsInput: '',
       },
       profileForm: {
         name: authStore.user?.name || '',
       },
+      isUpdatingProfile: false,
       presetCategoryStore,
       authStore,
     };
@@ -179,6 +196,7 @@ export default {
             name: p.name || 'Unnamed Preset',
             slug: p.slug,
             creator: authStore.user?.name || 'You',
+            user: p.user || authStore.user || null,
             preset_category_id: p.preset_category_id,
             preset_category: p.preset_category || { name: 'General' },
             tags: p.tags || [],
@@ -215,13 +233,25 @@ export default {
     editPreset(preset) {
       this.editingPreset = preset;
       try {
+        // Convert tags array back to comma-separated string for editing
+        const tagsInput = preset.tags && preset.tags.length > 0
+          ? preset.tags.map(tag => tag.name || tag).join(', ')
+          : '';
+
         this.presetForm = {
           ...preset,
           settings: JSON.stringify(JSON.parse(preset.settings), null, 2),
           public: !!preset.public,
+          tagsInput: tagsInput,
         };
       } catch (e) {
-        this.presetForm = { ...preset, settings: 'Error parsing settings.' }
+        this.presetForm = {
+          ...preset,
+          settings: 'Error parsing settings.',
+          tagsInput: preset.tags && preset.tags.length > 0
+            ? preset.tags.map(tag => tag.name || tag).join(', ')
+            : ''
+        }
         console.error(`Could not parse settings for preset ${preset.id} on edit:`, preset.settings, e);
       }
       this.showPresetDialog = true;
@@ -234,22 +264,47 @@ export default {
     resetForm() {
       this.presetForm = {
         name: '',
+        description: '',
         preset_category_id: null,
         settings: '',
         public: false,
         color: '#4ade80',
+        tagsInput: '',
       };
     },
     async savePreset() {
+      if (this.isSavingPreset) return;
+
+      // Validate tags input
+      if (!this.presetForm.tagsInput.trim()) {
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Tags are required', life: 3000 });
+        return;
+      }
+
+      this.isSavingPreset = true;
       try {
         // Ensure the settings are valid JSON before creating the payload
         JSON.parse(this.presetForm.settings);
+
+        // Process tags from comma-separated input
+        const tags = this.presetForm.tagsInput
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(tag => tag.length > 0);
+
+        if (tags.length === 0) {
+          this.$toast.add({ severity: 'error', summary: 'Error', detail: 'At least one tag is required', life: 3000 });
+          return;
+        }
+
         const payload = {
           name: this.presetForm.name,
+          description: this.presetForm.description,
           preset_category_id: this.presetForm.preset_category_id,
           settings: this.presetForm.settings, // Pass settings as a string
           public: this.presetForm.public,
           color: this.presetForm.color,
+          tags: tags,
         };
 
         if (this.editingPreset) {
@@ -262,6 +317,8 @@ export default {
       } catch (error) {
         const errorMessage = error.response?.data?.message || 'An error occurred';
         this.$toast.add({ severity: 'error', summary: 'Error', detail: errorMessage, life: 3000 });
+      } finally {
+        this.isSavingPreset = false;
       }
     },
     confirmDelete(preset) {
@@ -307,13 +364,21 @@ export default {
       }
     },
     async updateProfile() {
+      if (this.isUpdatingProfile) return;
+      this.isUpdatingProfile = true;
       try {
-        await updateProfile(this.profileForm);
+        const payload = {
+          name: this.profileForm.name,
+          avatar_variant: this.authStore.avatarVariant,
+        };
+        await updateProfile(payload);
         await this.authStore.fetchUser(); // Refetch user data
         this.showProfileDialog = false;
       } catch (error) {
         const errorMessage = error.response?.data?.message || 'An error occurred';
         this.$toast.add({ severity: 'error', summary: 'Error', detail: errorMessage, life: 3000 });
+      } finally {
+        this.isUpdatingProfile = false;
       }
     },
   },

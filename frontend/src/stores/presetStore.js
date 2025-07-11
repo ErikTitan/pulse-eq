@@ -36,6 +36,7 @@ export const usePresetStore = defineStore('preset', {
             slug: p.slug,
             description: p.description || '',
             creator: p.user?.name || 'Anonymous',
+            user: p.user || null,
             preset_category_id: p.preset_category_id,
             preset_category: p.preset_category || { name: 'General' },
             tags: p.tags || [],

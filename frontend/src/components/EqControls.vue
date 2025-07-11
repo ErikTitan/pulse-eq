@@ -127,6 +127,17 @@ export default {
 
     async savePreset() {
       try {
+        // Validate that tags are provided
+        if (!this.savePresetForm.tags || this.savePresetForm.tags.length === 0) {
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'At least one tag is required',
+            life: 3000
+          });
+          return;
+        }
+
         const settings = this.filters.map(filter => ({
           type: filter.type,
           frequency: filter.frequency,
@@ -362,16 +373,20 @@ export default {
         <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <label for="preset-name">Name</label>
-            <InputText id="preset-name" v-model="savePresetForm.name" />
+            <InputText id="preset-name" v-model="savePresetForm.name" maxlength="50" />
+            <small :class="{ 'text-red-500': savePresetForm.name.length >= 50 }">{{ savePresetForm.name.length }}/50
+              characters</small>
           </div>
           <div class="flex flex-col gap-2">
             <label for="preset-description">Description</label>
-            <Textarea id="preset-description" v-model="savePresetForm.description" rows="3" maxlength="100" />
-            <small :class="{ 'text-red-500': savePresetForm.description.length >= 100 }">{{ savePresetForm.description.length }}/100</small>
+            <Textarea id="preset-description" v-model="savePresetForm.description" rows="3" maxlength="80" />
+            <small :class="{ 'text-red-500': savePresetForm.description.length >= 80 }">{{
+              savePresetForm.description.length }}/100</small>
           </div>
           <div class="flex flex-col gap-2">
             <label for="preset-tags">Tags</label>
-            <AutoComplete id="preset-tags" v-model="savePresetForm.tags" :suggestions="filteredTags" @complete="searchTags" multiple separator="," />
+            <AutoComplete id="preset-tags" v-model="savePresetForm.tags" :suggestions="filteredTags"
+              @complete="searchTags" multiple separator="," />
           </div>
           <div class="flex flex-col gap-2">
             <label for="preset-category">Category</label>
@@ -428,4 +443,3 @@ export default {
     </template>
   </Card>
 </template>
-

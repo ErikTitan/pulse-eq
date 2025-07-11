@@ -19,17 +19,6 @@
       </div>
     </div>
 
-    <!-- Audio Preview (if available) -->
-    <div v-if="showAudioPreview" class="audio-preview mb-4">
-      <div class="flex items-center space-x-2 bg-gray-800 rounded-lg p-3">
-        <button @click="togglePlay" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full">
-          <i :class="isPlaying ? 'pi pi-pause' : 'pi pi-play'" class="text-sm"></i>
-        </button>
-        <span class="text-sm text-gray-300">Preview with EQ</span>
-      </div>
-      <audio ref="audioElement" :src="audioSample" @ended="isPlaying = false" preload="metadata"></audio>
-    </div>
-
     <!-- Action Buttons -->
     <div class="action-buttons flex space-x-2">
       <button @click="$emit('apply', preset)"
@@ -51,21 +40,12 @@ const props = defineProps({
   preset: {
     type: Object,
     required: true
-  },
-  showAudioPreview: {
-    type: Boolean,
-    default: true
   }
 });
 
 const emit = defineEmits(['apply', 'download']);
 
 const eqCanvas = ref(null);
-const audioElement = ref(null);
-const isPlaying = ref(false);
-
-// Use the sample audio from your assets
-const audioSample = '/src/assets/audio/sample_audio.mp3';
 
 const frequencyBands = computed(() => {
   try {
@@ -91,17 +71,6 @@ const formatGain = (gain) => {
   return gainDb >= 0 ? `+${gainDb.toFixed(1)}dB` : `${gainDb.toFixed(1)}dB`;
 };
 
-const togglePlay = () => {
-  if (audioElement.value) {
-    if (isPlaying.value) {
-      audioElement.value.pause();
-    } else {
-      audioElement.value.play();
-    }
-    isPlaying.value = !isPlaying.value;
-  }
-};
-
 const drawEqCurve = () => {
   const canvas = eqCanvas.value;
   if (!canvas) return;
@@ -113,10 +82,20 @@ const drawEqCurve = () => {
   // Clear canvas
   ctx.clearRect(0, 0, width, height);
 
+  // Normalize color to ensure valid hex format
+  let color = props.preset.color || '#4ade80';
+  if (!color.startsWith('#')) {
+    color = `#${color}`;
+  }
+  // Validate hex color format and fallback if invalid
+  if (!/^#[0-9A-F]{6}$/i.test(color)) {
+    color = '#4ade80';
+  }
+
   // Set up the drawing style
-  ctx.strokeStyle = props.preset.color || '#4ade80';
+  ctx.strokeStyle = color;
   ctx.lineWidth = 2;
-  ctx.fillStyle = `${props.preset.color || '#4ade80'}20`;
+  ctx.fillStyle = `${color}20`;
 
   // Draw grid
   ctx.strokeStyle = '#374151';
@@ -142,7 +121,7 @@ const drawEqCurve = () => {
 
   // Draw EQ curve
   if (frequencyBands.value.length > 0) {
-    ctx.strokeStyle = props.preset.color || '#4ade80';
+    ctx.strokeStyle = color;
     ctx.lineWidth = 3;
 
     ctx.beginPath();
@@ -166,7 +145,7 @@ const drawEqCurve = () => {
     ctx.lineTo(width, height);
     ctx.lineTo(0, height);
     ctx.closePath();
-    ctx.fillStyle = `${props.preset.color || '#4ade80'}20`;
+    ctx.fillStyle = `${color}20`;
     ctx.fill();
   }
 };

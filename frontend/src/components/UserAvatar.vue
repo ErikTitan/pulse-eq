@@ -18,6 +18,7 @@ export default {
     },
     variant: {
       type: String,
+      default: 'bauhaus',
       validator: (value) => ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
     },
   },
@@ -48,26 +49,13 @@ export default {
         '#6366F1'  // indigo-500
       ];
     },
-    finalVariant() {
-      if (this.variant) {
-        return this.variant;
-      }
-      const variants = ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'];
-      const name = this.userName;
-      if (name === 'Anonymous User') {
-        return 'marble';
-      }
-      const hash = Array.from(name).reduce((acc, char) => acc + char.charCodeAt(0), 0);
-      const index = hash % variants.length;
-      return variants[index];
-    },
   },
 };
 </script>
 
 <template>
   <div class="avatar-wrapper">
-    <Avatar :size="avatarSize" :name="userName" :variant="finalVariant" :colors="colorPalette" :title="true" />
+    <Avatar :size="avatarSize" :name="userName" :variant="variant" :colors="colorPalette" :title="true" />
   </div>
 </template>
 

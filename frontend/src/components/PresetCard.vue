@@ -8,24 +8,31 @@
         </div>
       </template>
       <template #title>
-        <div class="flex justify-between items-start">
-          <div>
-            <h3 class="text-xl font-bold">{{ preset.name }}</h3>
-            <p class="text-sm text-text-secondary">by {{ preset.creator }}</p>
+        <div class="flex justify-between items-start gap-3">
+          <div class="flex-1 min-w-0">
+            <h3 class="text-xl font-bold truncate">{{ preset.name }}</h3>
           </div>
-          <Rating :modelValue="rating" @update:modelValue="onRate" :readonly="!authStore.isAuthenticated" :cancel="false" />
+          <div class="flex-shrink-0">
+            <Rating :modelValue="rating" @update:modelValue="onRate" :readonly="!authStore.isAuthenticated"
+              :cancel="false" />
+          </div>
         </div>
       </template>
       <template #content>
         <div class="space-y-4">
-          <p ref="description" class="text-sm text-surface-600 dark:text-surface-400 min-h-[2.5rem]" :class="{ 'line-clamp-2': !isExpanded }">{{ preset.description }}</p>
+          <p ref="description" class="text-sm text-surface-600 dark:text-surface-400 min-h-[2.5rem]"
+            :class="{ 'line-clamp-2': !isExpanded }">{{ preset.description }}</p>
           <button v-if="isTruncated" @click="toggleExpanded" class="text-sm text-primary-500 hover:underline">
             {{ isExpanded ? 'Show less' : 'Show more' }}
           </button>
           <div class="flex items-center justify-between">
-            <span class="text-sm text-text-secondary">
-              {{ (preset.usageCount || 0).toLocaleString() }} users
-            </span>
+            <div class="flex items-center gap-2">
+              <UserAvatar v-if="showUserAvatar && preset.user" :user="preset.user" size="small"
+                :variant="preset.user.avatar_variant || 'bauhaus'" class="flex-shrink-0" />
+              <span class="text-sm text-text-secondary">
+                {{ (preset.usageCount || 0).toLocaleString() }} users
+              </span>
+            </div>
             <div class="flex gap-2">
               <Button icon="pi pi-download" class="p-button-rounded p-button-outlined"
                 @click.prevent="$emit('download', preset)" tooltip="Download" />
@@ -52,6 +59,7 @@ import Tag from 'primevue/tag'
 import Badge from 'primevue/badge'
 import Rating from 'primevue/rating'
 import Chart from 'primevue/chart'
+import UserAvatar from '@/components/UserAvatar.vue'
 import { useAuthStore } from '@/stores/authStore'
 import { ratePreset } from '@/services/presetService'
 
@@ -63,7 +71,8 @@ export default {
     Tag,
     Badge,
     Rating,
-    Chart
+    Chart,
+    UserAvatar
   },
   props: {
     preset: {
@@ -73,6 +82,10 @@ export default {
     showActions: {
       type: Boolean,
       default: false
+    },
+    showUserAvatar: {
+      type: Boolean,
+      default: true
     }
   },
   emits: ['download', 'edit', 'delete', 'rate'],

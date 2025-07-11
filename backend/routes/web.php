@@ -13,8 +13,8 @@ Route::get('/sitemap.xml', [SitemapController::class, 'index']);
 // The '/api' prefix is added to maintain compatibility with the frontend.
 Route::prefix('api')->group(function () {
     // Auth routes
-    Route::post('/register', [AuthController::class, 'register']);
-    Route::post('/login', [AuthController::class, 'login']);
+    Route::post('/register', [AuthController::class, 'register'])->middleware('throttle:auth');
+    Route::post('/login', [AuthController::class, 'login'])->middleware('throttle:auth');
 
     // Authenticated routes
     Route::middleware('auth')->group(function () {

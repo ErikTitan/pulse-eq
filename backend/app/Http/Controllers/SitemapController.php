@@ -10,7 +10,11 @@ class SitemapController extends Controller
 {
     public function index()
     {
-        $presets = Preset::where('public', true)->get();
+        $presets = Preset::where('public', true)
+            ->whereNotNull('description')
+            ->has('uses')
+            ->has('ratings')
+            ->get();
         $appUrl = config('app.url');
 
         return response()->view('sitemap', [

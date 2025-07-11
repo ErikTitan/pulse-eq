@@ -76,11 +76,10 @@ class AuthController extends Controller
 
         $request->validate([
             'name' => ['required', 'string', 'max:255', new AsciiOnly, 'blasp_check'],
+            'avatar_variant' => 'sometimes|string|in:bauhaus,beam,marble,pixel,ring,sunset',
         ]);
 
-        $user->update([
-            'name' => $request->name,
-        ]);
+        $user->update($request->only('name', 'avatar_variant'));
 
         return response()->json([
             'message' => 'Profile updated successfully',
