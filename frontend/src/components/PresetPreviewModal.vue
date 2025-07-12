@@ -1,6 +1,5 @@
 <template>
-  <div v-if="visible || shouldFetchData"
-    class="preset-preview-modal fixed inset-0 z-50 flex items-center justify-center p-4">
+  <div v-if="visible || slug" class="preset-preview-modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <!-- Backdrop -->
     <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" @click="handleClose"></div>
 
@@ -44,15 +43,18 @@
               </div>
 
               <!-- Rating Section -->
-              <div
+              <div v-if="authStore.isAuthenticated && authStore.user?.id !== currentPreset.user?.id"
                 class="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
                 <div class="flex items-center gap-3">
                   <span class="text-sm text-surface-700 dark:text-surface-300 font-medium">Your Rating:</span>
-                  <Rating v-model="userRating" @update:modelValue="handleRating"
-                    :readonly="!authStore.isAuthenticated || isRatingInProgress" :cancel="false" />
+                  <Rating v-model="selectedRating"
+                    :readonly="!authStore.isAuthenticated || isRatingInProgress || authStore.user?.id === currentPreset.user?.id || userRating > 0"
+                    :cancel="false" />
                 </div>
                 <div
                   class="text-right text-sm text-surface-700 dark:text-surface-300 font-medium flex items-center gap-2">
+                  <Button v-if="showSubmitButton" label="Submit" @click="submitRating" :loading="isRatingInProgress"
+                    class="p-button-sm" />
                   <i class="pi pi-star-fill text-primary-500"></i>
                 </div>
               </div>
@@ -116,6 +118,7 @@ import Rating from 'primevue/rating';
 import Tag from 'primevue/tag';
 import { usePresetStore } from '@/stores/presetStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useToast } from 'primevue/usetoast';
 import { seoManager } from '@/utils/seoManager';
 import { ratePreset } from '@/services/presetService';
 import axios from '@/axios';
@@ -132,14 +135,17 @@ const route = useRoute();
 const router = useRouter();
 const presetStore = usePresetStore();
 const authStore = useAuthStore();
+const toast = useToast();
 
 const loading = ref(false);
 const error = ref(false);
 const fetchedPreset = ref(null);
 const userRating = ref(0);
+const selectedRating = ref(0);
 const isRatingInProgress = ref(false);
 
-const shouldFetchData = computed(() => props.slug && !props.preset && !props.visible);
+const showSubmitButton = computed(() => selectedRating.value > 0 && selectedRating.value !== userRating.value);
+
 const currentPreset = computed(() => props.preset || fetchedPreset.value);
 
 const transformedPreset = computed(() => {
@@ -153,7 +159,7 @@ const transformedPreset = computed(() => {
     settings: currentPreset.value.settings,
     color: currentPreset.value.color || '#4ade80',
     usageCount: currentPreset.value.uses_count || currentPreset.value.usageCount || 0,
-    rating: currentPreset.value.ratings_avg_rating || currentPreset.value.rating || 0,
+    rating: currentPreset.value.ratings_avg || currentPreset.value.rating || 0,
     preset_category: currentPreset.value.preset_category,
     tags: currentPreset.value.tags || []
   };
@@ -171,42 +177,50 @@ const fetchPresetData = async (slug) => {
     const response = await axios.get(`/presets/slug/${slug}`);
     fetchedPreset.value = response.data;
     userRating.value = response.data.user_rating || 0;
+    selectedRating.value = userRating.value;
     if (!props.visible) {
       seoManager.setPresetSEO({
         name: response.data.name,
         description: response.data.description,
         creator: response.data.user?.name || 'Anonymous',
-        rating: response.data.ratings_avg_rating || 0,
+        rating: response.data.ratings_avg || 0,
         usageCount: response.data.uses_count || 0
       });
     }
   } catch (err) {
-    console.error('Failed to fetch preset:', err);
     error.value = true;
   } finally {
     loading.value = false;
   }
 };
 
-const handleRating = async (newRating) => {
-  if (!authStore.isAuthenticated || isRatingInProgress.value) return;
+const submitRating = async () => {
+  if (!authStore.isAuthenticated || isRatingInProgress.value || !showSubmitButton.value) return;
 
   isRatingInProgress.value = true;
-  const previousRating = userRating.value;
-  userRating.value = newRating; // Optimistic UI update
 
   try {
-    const response = await ratePreset(currentPreset.value.id, newRating);
-    const newAverageRating = response.data.new_average_rating;
-
-    if (currentPreset.value) {
-      currentPreset.value.ratings_avg_rating = newAverageRating;
-    }
-    presetStore.updatePresetRating(currentPreset.value.id, newAverageRating);
+    const response = await ratePreset(currentPreset.value.slug, selectedRating.value);
+    presetStore.updatePreset(response.data);
+    userRating.value = selectedRating.value;
 
   } catch (error) {
-    console.error('Failed to rate preset:', error);
-    userRating.value = previousRating; // Revert on failure
+    selectedRating.value = userRating.value;
+    if (error.response && error.response.status === 403) {
+      toast.add({
+        severity: 'error',
+        summary: 'Unauthorized',
+        detail: 'You have already rated this preset or you are not allowed to rate your own preset.',
+        life: 3000,
+      });
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Failed to submit rating.',
+        life: 3000,
+      });
+    }
   } finally {
     isRatingInProgress.value = false;
   }
@@ -221,7 +235,7 @@ const handleApply = () => {
     handleClose();
     router.push({ name: 'equalizer' });
   } catch (error) {
-    console.error('Error applying preset:', error);
+    // Handle or log error applying preset
   }
 };
 
@@ -239,7 +253,7 @@ const handleDownload = () => {
     URL.revokeObjectURL(url);
     emit('download', currentPreset.value);
   } catch (error) {
-    console.error('Failed to download preset:', error);
+    // Handle or log error downloading preset
   }
 };
 
@@ -271,22 +285,16 @@ watch(() => props.slug, (newSlug) => {
 }, { immediate: true });
 
 watch(() => props.preset, (newPreset) => {
-  if (newPreset) userRating.value = newPreset.user_rating || 0;
+  if (newPreset) {
+    userRating.value = newPreset.user_rating || 0;
+    selectedRating.value = userRating.value;
+  }
 }, { immediate: true });
 
-onMounted(() => {
-  const routeSlug = route.params.slug;
-  if (routeSlug && !props.preset && !props.slug) {
-    fetchPresetData(routeSlug);
-  }
-  if (shouldFetchData.value) {
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-  }
-});
-
 onUnmounted(() => {
-  if (!props.visible) seoManager.reset();
+  if (!props.visible) {
+    seoManager.reset();
+  }
   document.removeEventListener('keydown', handleEscape);
   document.body.style.overflow = '';
 });

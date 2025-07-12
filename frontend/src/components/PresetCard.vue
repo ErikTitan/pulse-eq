@@ -13,7 +13,7 @@
             <h3 class="text-xl font-bold truncate">{{ preset.name }}</h3>
           </div>
           <div class="flex-shrink-0">
-            <Rating :modelValue="rating" :readonly="true" :cancel="false" />
+            <Rating :modelValue="preset.rating" :readonly="true" :cancel="false" />
           </div>
         </div>
       </template>
@@ -93,7 +93,6 @@ export default {
     const authStore = useAuthStore();
     return {
       authStore,
-      rating: this.preset.rating,
       isExpanded: false,
       isTruncated: false,
       chartOptions: {

@@ -9,7 +9,6 @@ export const usePresetStore = defineStore('preset', {
     async fetchPublicPresets() {
       try {
         const response = await getPublicPresets()
-        console.log('Raw presets from API:', response.data)
         this.presets = response.data.map((p) => {
           let settingsArray = []
           try {
@@ -41,8 +40,9 @@ export const usePresetStore = defineStore('preset', {
             preset_category: p.preset_category || { name: 'General' },
             tags: p.tags || [],
             usageCount: p.uses_count || 0,
-            rating: p.ratings_avg_rating || 0,
+            rating: p.ratings_avg || 0,
             isStaffPick: p.is_staff_pick || false,
+            user_rating: p.user_rating || 0,
             settings: p.settings,
             public: p.public,
             color: p.color || '#4ade80',
@@ -64,10 +64,10 @@ export const usePresetStore = defineStore('preset', {
         console.error('Error loading public presets:', error)
       }
     },
-    updatePresetRating(presetId, newRating) {
-      const preset = this.presets.find((p) => p.id === presetId)
-      if (preset) {
-        preset.rating = newRating
+    updatePreset(updatedPreset) {
+      const index = this.presets.findIndex((p) => p.id === updatedPreset.id)
+      if (index !== -1) {
+        this.presets[index] = { ...this.presets[index], ...updatedPreset }
       }
     },
     async applyPreset(settings) {

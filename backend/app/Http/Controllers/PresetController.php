@@ -21,12 +21,13 @@ class PresetController extends Controller
             ->withCount('uses')
             ->withAvg('ratings', 'rating')
             ->where('public', true)
-            ->get();
+            ->get()
+            ->append('user_rating');
     }
 
     public function userPresets(Request $request)
     {
-        return $request->user()->presets()->with('presetCategory', 'user', 'tags')->get();
+        return $request->user()->presets()->with('presetCategory', 'user', 'tags')->get()->append('user_rating');
     }
 
     public function store(Request $request)
@@ -111,6 +112,13 @@ class PresetController extends Controller
     public function showBySlug(Preset $preset)
     {
         // The preset is already fetched by route model binding
-        return response()->json($preset->load('presetCategory', 'user', 'tags'));
+        return response()->json($preset->load([
+            'presetCategory',
+            'user',
+            'tags',
+            'ratings' => function ($query) {
+                $query->where('user_id', auth()->id());
+            }
+        ])->append('user_rating'));
     }
 }

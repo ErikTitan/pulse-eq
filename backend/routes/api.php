@@ -23,6 +23,6 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::put('/user/profile', [AuthController::class, 'updateProfile']);
     Route::get('/user/presets', [PresetController::class, 'userPresets']);
     Route::post('/presets/{preset:slug}/use', [PresetUseController::class, 'store']);
-    Route::post('/presets/{preset:slug}/rate', [RatingController::class, 'store']);
+    Route::post('/presets/{preset:slug}/rate', [RatingController::class, 'store'])->middleware('throttle:rating');
     Route::apiResource('presets', PresetController::class)->except(['index', 'show']);
 });

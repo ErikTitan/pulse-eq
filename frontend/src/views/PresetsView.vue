@@ -171,16 +171,7 @@ export default {
   },
   mounted() {
     if (this.authStore.isAuthenticated) {
-      this.presetStore.fetchPublicPresets().then(() => {
-        const pathParts = window.location.pathname.split('/');
-        if (pathParts.length === 3 && pathParts[1] === 'presets') {
-          const slug = pathParts[2];
-          const preset = this.presetStore.presets.find(p => p.slug === slug);
-          if (preset) {
-            this.openPresetModal(preset);
-          }
-        }
-      });
+      this.presetStore.fetchPublicPresets();
     }
   }
 }

@@ -21,6 +21,8 @@ class Preset extends Model
         'preset_category_id',
         'color',
         'user_id',
+        'ratings_avg',
+        'ratings_count',
     ];
 
     protected $casts = [
@@ -76,5 +78,16 @@ class Preset extends Model
     public function ratings(): HasMany
     {
         return $this->hasMany(Rating::class);
+    }
+
+    public function getUserRatingAttribute()
+    {
+        if (!auth()->check()) {
+            return null;
+        }
+
+        $rating = $this->ratings()->where('user_id', auth()->id())->first();
+
+        return $rating ? $rating->rating : null;
     }
 }

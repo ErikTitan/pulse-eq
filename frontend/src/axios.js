@@ -13,19 +13,18 @@ const apiClient = axios.create({
 
 // Add request interceptor for CSRF token
 apiClient.interceptors.request.use(async (config) => {
-  console.log('Request:', config.url)
-
   // Get CSRF token for state-changing requests
   if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
-    // Use axios.create() without baseURL for Sanctum endpoints
+    // Use axios.create() with a base URL for Sanctum endpoints
     const sanctumClient = axios.create({
+      baseURL: '/',
       withCredentials: true,
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
       },
     })
-    await sanctumClient.get('sanctum/csrf-cookie')
+    await sanctumClient.get('/sanctum/csrf-cookie')
   }
 
   return config
@@ -44,7 +43,7 @@ apiClient.interceptors.response.use(
       }
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default apiClient
