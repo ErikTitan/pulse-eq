@@ -13,8 +13,7 @@
             <h3 class="text-xl font-bold truncate">{{ preset.name }}</h3>
           </div>
           <div class="flex-shrink-0">
-            <Rating :modelValue="rating" @update:modelValue="onRate" :readonly="!authStore.isAuthenticated"
-              :cancel="false" />
+            <Rating :modelValue="rating" :readonly="true" :cancel="false" />
           </div>
         </div>
       </template>
@@ -36,6 +35,8 @@
             <div class="flex gap-2">
               <Button icon="pi pi-download" class="p-button-rounded p-button-outlined"
                 @click.prevent="$emit('download', preset)" tooltip="Download" />
+              <Button icon="pi pi-share-alt" class="p-button-rounded p-button-outlined"
+                @click.prevent.stop="$emit('share', preset)" tooltip="Share" />
               <Button v-if="showActions" icon="pi pi-pencil"
                 class="p-button-rounded p-button-outlined p-button-secondary" @click="$emit('edit', preset)"
                 tooltip="Edit" />
@@ -61,7 +62,6 @@ import Rating from 'primevue/rating'
 import Chart from 'primevue/chart'
 import UserAvatar from '@/components/UserAvatar.vue'
 import { useAuthStore } from '@/stores/authStore'
-import { ratePreset } from '@/services/presetService'
 
 export default {
   name: 'PresetCard',
@@ -88,7 +88,7 @@ export default {
       default: true
     }
   },
-  emits: ['download', 'edit', 'delete', 'rate'],
+  emits: ['download', 'edit', 'delete', 'share'],
   data() {
     const authStore = useAuthStore();
     return {
@@ -184,20 +184,6 @@ export default {
         this.$refs.chart.reinit();
       }
     },
-    async onRate(event) {
-      if (!this.authStore.isAuthenticated) {
-        // Optionally, trigger login/register modal
-        return;
-      }
-      try {
-        await ratePreset(this.preset.id, event.value);
-        this.$emit('rate', { presetId: this.preset.id, newRating: event.value });
-      } catch (error) {
-        console.error('Failed to rate preset:', error);
-        // Revert rating on failure
-        this.rating = this.preset.rating;
-      }
-    }
   }
 };
 </script>

@@ -143,22 +143,44 @@ export default {
         console.error('Failed to download preset:', error);
       }
     },
-    handleRating({ presetId, newRating }) {
-      if (!this.authStore.isAuthenticated) return;
-      this.presetStore.updatePresetRating(presetId, newRating);
+    sharePreset(preset) {
+      // Handles both dummy (`is_public`) and real (`public`) presets
+      const isPublic = preset.public || preset.is_public;
+      if (!isPublic) {
+        this.$toast.add({ severity: 'warn', summary: 'Private Preset', detail: 'This preset is private.', life: 3000 });
+        return;
+      }
+      const presetUrl = `${window.location.origin}/presets/${preset.slug}`;
+      navigator.clipboard.writeText(presetUrl).then(() => {
+        this.$toast.add({ severity: 'success', summary: 'Link Copied', detail: 'Preset link copied to clipboard!', life: 3000 });
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Could not copy link.', life: 3000 });
+      });
     },
     openPresetModal(preset) {
       this.selectedPresetForModal = preset;
       this.showPreviewModal = true;
+      window.history.pushState({}, '', `/presets/${preset.slug}`);
     },
     closePresetModal() {
       this.showPreviewModal = false;
       this.selectedPresetForModal = null;
-    }
+      window.history.pushState({}, '', '/presets');
+    },
   },
   mounted() {
     if (this.authStore.isAuthenticated) {
-      this.presetStore.fetchPublicPresets();
+      this.presetStore.fetchPublicPresets().then(() => {
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts.length === 3 && pathParts[1] === 'presets') {
+          const slug = pathParts[2];
+          const preset = this.presetStore.presets.find(p => p.slug === slug);
+          if (preset) {
+            this.openPresetModal(preset);
+          }
+        }
+      });
     }
   }
 }
@@ -188,7 +210,7 @@ export default {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div v-for="preset in categoryPresets" :key="preset.id"
               class="block transition-transform hover:scale-105 cursor-pointer" @click="openPresetModal(preset)">
-              <PresetCard :preset="preset" @download="downloadPreset" @rate="handleRating" />
+              <PresetCard :preset="preset" @download="downloadPreset" @share="sharePreset" />
             </div>
           </div>
         </div>
@@ -207,8 +229,6 @@ export default {
       class="auth-overlay absolute inset-0 flex items-center justify-center bg-black bg-opacity-40 backdrop-blur-sm">
       <AuthRequired @showLogin="$emit('showLogin')" @showRegister="$emit('showRegister')" />
     </div>
-
-    <!-- Preset Preview Modal -->
     <PresetPreviewModal :visible="showPreviewModal" :preset="selectedPresetForModal" @close="closePresetModal"
       @download="downloadPreset" />
   </div>

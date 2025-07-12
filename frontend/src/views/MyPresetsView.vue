@@ -14,7 +14,7 @@
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <PresetCard v-for="preset in presets" :key="preset.id" :preset="preset" :show-actions="true"
           :show-user-avatar="false" @edit="editPreset" @delete="confirmDelete" @apply="applyPreset"
-          @download="downloadPreset" />
+          @download="downloadPreset" @share="sharePreset" />
       </div>
     </div>
 
@@ -362,6 +362,19 @@ export default {
       } catch (error) {
         console.error('Failed to download preset:', error);
       }
+    },
+    sharePreset(preset) {
+      if (!preset.public) {
+        this.$toast.add({ severity: 'warn', summary: 'Private Preset', detail: 'This preset is private. Make it public to share it.', life: 3000 });
+        return;
+      }
+      const presetUrl = `${window.location.origin}/presets/${preset.slug}`;
+      navigator.clipboard.writeText(presetUrl).then(() => {
+        this.$toast.add({ severity: 'success', summary: 'Link Copied', detail: 'Preset link copied to clipboard!', life: 3000 });
+      }).catch(err => {
+        console.error('Could not copy text: ', err);
+        this.$toast.add({ severity: 'error', summary: 'Error', detail: 'Could not copy link.', life: 3000 });
+      });
     },
     async updateProfile() {
       if (this.isUpdatingProfile) return;
