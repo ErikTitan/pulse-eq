@@ -33,130 +33,131 @@
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted, computed, watch } from 'vue';
-
-const props = defineProps({
-  preset: {
-    type: Object,
-    required: true
-  }
-});
-
-const emit = defineEmits(['apply', 'download']);
-
-const eqCanvas = ref(null);
-
-const frequencyBands = computed(() => {
-  try {
-    const settings = typeof props.preset.settings === 'string'
-      ? JSON.parse(props.preset.settings)
-      : props.preset.settings;
-    return Array.isArray(settings) ? settings : [];
-  } catch (e) {
-    console.error('Error parsing preset settings:', e);
-    return [];
-  }
-});
-
-const formatFrequency = (freq) => {
-  if (freq >= 1000) {
-    return `${Math.round(freq / 1000)}kHz`;
-  }
-  return `${Math.round(freq)}Hz`;
-};
-
-const formatGain = (gain) => {
-  const gainDb = gain || 0;
-  return gainDb >= 0 ? `+${gainDb.toFixed(1)}dB` : `${gainDb.toFixed(1)}dB`;
-};
-
-const drawEqCurve = () => {
-  const canvas = eqCanvas.value;
-  if (!canvas) return;
-
-  const ctx = canvas.getContext('2d');
-  const width = canvas.width;
-  const height = canvas.height;
-
-  // Clear canvas
-  ctx.clearRect(0, 0, width, height);
-
-  // Normalize color to ensure valid hex format
-  let color = props.preset.color || '#4ade80';
-  if (!color.startsWith('#')) {
-    color = `#${color}`;
-  }
-  // Validate hex color format and fallback if invalid
-  if (!/^#[0-9A-F]{6}$/i.test(color)) {
-    color = '#4ade80';
-  }
-
-  // Set up the drawing style
-  ctx.strokeStyle = color;
-  ctx.lineWidth = 2;
-  ctx.fillStyle = `${color}20`;
-
-  // Draw grid
-  ctx.strokeStyle = '#374151';
-  ctx.lineWidth = 1;
-
-  // Horizontal grid lines (gain levels)
-  for (let i = 0; i <= 4; i++) {
-    const y = (height / 4) * i;
-    ctx.beginPath();
-    ctx.moveTo(0, y);
-    ctx.lineTo(width, y);
-    ctx.stroke();
-  }
-
-  // Vertical grid lines (frequency divisions)
-  for (let i = 0; i <= 6; i++) {
-    const x = (width / 6) * i;
-    ctx.beginPath();
-    ctx.moveTo(x, 0);
-    ctx.lineTo(x, height);
-    ctx.stroke();
-  }
-
-  // Draw EQ curve
-  if (frequencyBands.value.length > 0) {
-    ctx.strokeStyle = color;
-    ctx.lineWidth = 3;
-
-    ctx.beginPath();
-
-    frequencyBands.value.forEach((band, index) => {
-      const x = (width / (frequencyBands.value.length - 1)) * index;
-      const gain = band.gain || 0;
-      // Map gain from -12dB to +12dB to canvas height
-      const y = height - ((gain + 12) / 24) * height;
-
-      if (index === 0) {
-        ctx.moveTo(x, y);
-      } else {
-        ctx.lineTo(x, y);
+<script>
+export default {
+  name: 'MiniEqPreview',
+  props: {
+    preset: {
+      type: Object,
+      required: true
+    }
+  },
+  emits: ['apply', 'download'],
+  computed: {
+    frequencyBands() {
+      try {
+        const settings = typeof this.preset.settings === 'string'
+          ? JSON.parse(this.preset.settings)
+          : this.preset.settings;
+        return Array.isArray(settings) ? settings : [];
+      } catch (e) {
+        console.error('Error parsing preset settings:', e);
+        return [];
       }
-    });
+    }
+  },
+  watch: {
+    preset: {
+      handler() {
+        this.drawEqCurve();
+      },
+      deep: true
+    }
+  },
+  mounted() {
+    this.drawEqCurve();
+  },
+  methods: {
+    formatFrequency(freq) {
+      if (freq >= 1000) {
+        return `${Math.round(freq / 1000)}kHz`;
+      }
+      return `${Math.round(freq)}Hz`;
+    },
+    formatGain(gain) {
+      const gainDb = gain || 0;
+      return gainDb >= 0 ? `+${gainDb.toFixed(1)}dB` : `${gainDb.toFixed(1)}dB`;
+    },
+    drawEqCurve() {
+      const canvas = this.$refs.eqCanvas;
+      if (!canvas) return;
 
-    ctx.stroke();
+      const ctx = canvas.getContext('2d');
+      const width = canvas.width;
+      const height = canvas.height;
 
-    // Fill area under curve
-    ctx.lineTo(width, height);
-    ctx.lineTo(0, height);
-    ctx.closePath();
-    ctx.fillStyle = `${color}20`;
-    ctx.fill();
+      // Clear canvas
+      ctx.clearRect(0, 0, width, height);
+
+      // Normalize color to ensure valid hex format
+      let color = this.preset.color || '#4ade80';
+      if (!color.startsWith('#')) {
+        color = `#${color}`;
+      }
+      // Validate hex color format and fallback if invalid
+      if (!/^#[0-9A-F]{6}$/i.test(color)) {
+        color = '#4ade80';
+      }
+
+      // Set up the drawing style
+      ctx.strokeStyle = color;
+      ctx.lineWidth = 2;
+      ctx.fillStyle = `${color}20`;
+
+      // Draw grid
+      ctx.strokeStyle = '#374151';
+      ctx.lineWidth = 1;
+
+      // Horizontal grid lines (gain levels)
+      for (let i = 0; i <= 4; i++) {
+        const y = (height / 4) * i;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+      }
+
+      // Vertical grid lines (frequency divisions)
+      for (let i = 0; i <= 6; i++) {
+        const x = (width / 6) * i;
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+      }
+
+      // Draw EQ curve
+      if (this.frequencyBands.length > 0) {
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 3;
+
+        ctx.beginPath();
+
+        this.frequencyBands.forEach((band, index) => {
+          const x = (width / (this.frequencyBands.length - 1)) * index;
+          const gain = band.gain || 0;
+          // Map gain from -12dB to +12dB to canvas height
+          const y = height - ((gain + 12) / 24) * height;
+
+          if (index === 0) {
+            ctx.moveTo(x, y);
+          } else {
+            ctx.lineTo(x, y);
+          }
+        });
+
+        ctx.stroke();
+
+        // Fill area under curve
+        ctx.lineTo(width, height);
+        ctx.lineTo(0, height);
+        ctx.closePath();
+        ctx.fillStyle = `${color}20`;
+        ctx.fill();
+      }
+    }
   }
-};
-
-onMounted(() => {
-  drawEqCurve();
-});
-
-watch(() => props.preset, () => {
-  drawEqCurve();
-}, { deep: true });
+}
 </script>
 
 <style scoped>
@@ -171,6 +172,7 @@ watch(() => props.preset, () => {
 .line-clamp-2 {
   display: -webkit-box;
   -webkit-line-clamp: 2;
+  line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }

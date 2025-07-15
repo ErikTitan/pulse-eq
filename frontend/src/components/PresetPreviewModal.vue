@@ -108,196 +108,216 @@
   </div>
 </template>
 
-<script setup>
-import { ref, watch, computed, onMounted, onUnmounted } from 'vue';
-import { useRoute, useRouter } from 'vue-router';
+<script>
+import { mapStores } from 'pinia';
+import { usePresetStore } from '@/stores/presetStore';
+import { useAuthStore } from '@/stores/authStore';
 import MiniEqPreview from './MiniEqPreview.vue';
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import Rating from 'primevue/rating';
 import Tag from 'primevue/tag';
-import { usePresetStore } from '@/stores/presetStore';
-import { useAuthStore } from '@/stores/authStore';
 import { useToast } from 'primevue/usetoast';
 import { seoManager } from '@/utils/seoManager';
 import { ratePreset } from '@/services/presetService';
 import axios from '@/axios';
 
-const props = defineProps({
-  visible: { type: Boolean, default: false },
-  preset: { type: Object, default: null },
-  slug: { type: String, default: null }
-});
-
-const emit = defineEmits(['close', 'download']);
-
-const route = useRoute();
-const router = useRouter();
-const presetStore = usePresetStore();
-const authStore = useAuthStore();
-const toast = useToast();
-
-const loading = ref(false);
-const error = ref(false);
-const fetchedPreset = ref(null);
-const userRating = ref(0);
-const selectedRating = ref(0);
-const isRatingInProgress = ref(false);
-
-const showSubmitButton = computed(() => selectedRating.value > 0 && selectedRating.value !== userRating.value);
-
-const currentPreset = computed(() => props.preset || fetchedPreset.value);
-
-const transformedPreset = computed(() => {
-  if (!currentPreset.value) return null;
-  return {
-    id: currentPreset.value.id,
-    name: currentPreset.value.name,
-    slug: currentPreset.value.slug,
-    description: currentPreset.value.description,
-    creator: currentPreset.value.user?.name || currentPreset.value.creator || 'Anonymous',
-    settings: currentPreset.value.settings,
-    color: currentPreset.value.color || '#4ade80',
-    usageCount: currentPreset.value.uses_count || currentPreset.value.usageCount || 0,
-    rating: currentPreset.value.ratings_avg || currentPreset.value.rating || 0,
-    preset_category: currentPreset.value.preset_category,
-    tags: currentPreset.value.tags || []
-  };
-});
-
-const formatDate = (dateString) => new Date(dateString).toLocaleDateString('en-US', {
-  year: 'numeric', month: 'long', day: 'numeric'
-});
-
-const fetchPresetData = async (slug) => {
-  if (!slug) return;
-  loading.value = true;
-  error.value = false;
-  try {
-    const response = await axios.get(`/presets/slug/${slug}`);
-    fetchedPreset.value = response.data;
-    userRating.value = response.data.user_rating || 0;
-    selectedRating.value = userRating.value;
-    if (!props.visible) {
-      seoManager.setPresetSEO({
-        name: response.data.name,
-        description: response.data.description,
-        creator: response.data.user?.name || 'Anonymous',
-        rating: response.data.ratings_avg || 0,
-        usageCount: response.data.uses_count || 0
-      });
+export default {
+  name: 'PresetPreviewModal',
+  components: {
+    MiniEqPreview,
+    Card,
+    Button,
+    Rating,
+    Tag
+  },
+  props: {
+    visible: { type: Boolean, default: false },
+    preset: { type: Object, default: null },
+    slug: { type: String, default: null }
+  },
+  emits: ['close', 'download'],
+  data() {
+    return {
+      loading: false,
+      error: false,
+      fetchedPreset: null,
+      userRating: 0,
+      selectedRating: 0,
+      isRatingInProgress: false,
+    };
+  },
+  computed: {
+    ...mapStores(usePresetStore, useAuthStore),
+    showSubmitButton() {
+      return this.selectedRating > 0 && this.selectedRating !== this.userRating;
+    },
+    currentPreset() {
+      return this.preset || this.fetchedPreset;
+    },
+    transformedPreset() {
+      if (!this.currentPreset) return null;
+      return {
+        id: this.currentPreset.id,
+        name: this.currentPreset.name,
+        slug: this.currentPreset.slug,
+        description: this.currentPreset.description,
+        creator: this.currentPreset.user?.name || this.currentPreset.creator || 'Anonymous',
+        settings: this.currentPreset.settings,
+        color: this.currentPreset.color || '#4ade80',
+        usageCount: this.currentPreset.uses_count || this.currentPreset.usageCount || 0,
+        rating: this.currentPreset.ratings_avg || this.currentPreset.rating || 0,
+        preset_category: this.currentPreset.preset_category,
+        tags: this.currentPreset.tags || []
+      };
+    },
+  },
+  watch: {
+    visible(isVisible) {
+      if (isVisible) {
+        document.addEventListener('keydown', this.handleEscape);
+        document.body.style.overflow = 'hidden';
+      } else {
+        document.removeEventListener('keydown', this.handleEscape);
+        document.body.style.overflow = '';
+      }
+    },
+    slug: {
+      immediate: true,
+      handler(newSlug) {
+        if (newSlug && !this.preset) {
+          this.fetchPresetData(newSlug);
+        }
+      }
+    },
+    preset: {
+      immediate: true,
+      handler(newPreset) {
+        if (newPreset) {
+          this.userRating = newPreset.user_rating || 0;
+          this.selectedRating = this.userRating;
+        }
+      }
     }
-  } catch (err) {
-    error.value = true;
-  } finally {
-    loading.value = false;
-  }
-};
-
-const submitRating = async () => {
-  if (!authStore.isAuthenticated || isRatingInProgress.value || !showSubmitButton.value) return;
-
-  isRatingInProgress.value = true;
-
-  try {
-    const response = await ratePreset(currentPreset.value.slug, selectedRating.value);
-    presetStore.updatePreset(response.data);
-    userRating.value = selectedRating.value;
-
-  } catch (error) {
-    selectedRating.value = userRating.value;
-    if (error.response && error.response.status === 403) {
-      toast.add({
-        severity: 'error',
-        summary: 'Unauthorized',
-        detail: 'You have already rated this preset or you are not allowed to rate your own preset.',
-        life: 3000,
-      });
-    } else {
-      toast.add({
-        severity: 'error',
-        summary: 'Error',
-        detail: 'Failed to submit rating.',
-        life: 3000,
-      });
+  },
+  created() {
+    this.toast = useToast();
+  },
+  mounted() {
+    if (this.slug && !this.preset) {
+      this.fetchPresetData(this.slug);
     }
-  } finally {
-    isRatingInProgress.value = false;
-  }
-};
-
-const handleApply = () => {
-  try {
-    const settings = typeof currentPreset.value.settings === 'string'
-      ? JSON.parse(currentPreset.value.settings)
-      : currentPreset.value.settings;
-    presetStore.applyPreset(settings);
-    handleClose();
-    router.push({ name: 'equalizer' });
-  } catch (error) {
-    // Handle or log error applying preset
-  }
-};
-
-const handleDownload = () => {
-  try {
-    const settings = JSON.stringify(JSON.parse(currentPreset.value.settings), null, 2);
-    const blob = new Blob([settings], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${currentPreset.value.name}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    emit('download', currentPreset.value);
-  } catch (error) {
-    // Handle or log error downloading preset
-  }
-};
-
-const handleClose = () => {
-  emit('close');
-  if (route.name === 'PresetDetail') {
-    router.push({ name: authStore.isAuthenticated ? 'presets' : 'home' });
-  }
-};
-
-const handleEscape = (event) => {
-  if (event.key === 'Escape' && (props.visible || shouldFetchData.value)) {
-    handleClose();
-  }
-};
-
-watch(() => props.visible, (visible) => {
-  if (visible) {
-    document.addEventListener('keydown', handleEscape);
-    document.body.style.overflow = 'hidden';
-  } else {
-    document.removeEventListener('keydown', handleEscape);
+  },
+  beforeUnmount() {
+    if (!this.visible) {
+      seoManager.reset();
+    }
+    document.removeEventListener('keydown', this.handleEscape);
     document.body.style.overflow = '';
-  }
-});
+  },
+  methods: {
+    formatDate(dateString) {
+      return new Date(dateString).toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric'
+      });
+    },
+    async fetchPresetData(slug) {
+      if (!slug) return;
+      this.loading = true;
+      this.error = false;
+      try {
+        const response = await axios.get(`/presets/slug/${slug}`);
+        this.fetchedPreset = response.data;
+        this.userRating = response.data.user_rating || 0;
+        this.selectedRating = this.userRating;
+        if (!this.visible) {
+          seoManager.setPresetSEO({
+            name: response.data.name,
+            description: response.data.description,
+            creator: response.data.user?.name || 'Anonymous',
+            rating: response.data.ratings_avg || 0,
+            usageCount: response.data.uses_count || 0
+          });
+        }
+      } catch (err) {
+        this.error = true;
+      } finally {
+        this.loading = false;
+      }
+    },
+    async submitRating() {
+      if (!this.authStore.isAuthenticated || this.isRatingInProgress || !this.showSubmitButton) return;
 
-watch(() => props.slug, (newSlug) => {
-  if (newSlug && !props.preset) fetchPresetData(newSlug);
-}, { immediate: true });
+      this.isRatingInProgress = true;
 
-watch(() => props.preset, (newPreset) => {
-  if (newPreset) {
-    userRating.value = newPreset.user_rating || 0;
-    selectedRating.value = userRating.value;
-  }
-}, { immediate: true });
+      try {
+        const response = await ratePreset(this.currentPreset.slug, this.selectedRating);
+        this.presetStore.updatePreset(response.data);
+        this.userRating = this.selectedRating;
 
-onUnmounted(() => {
-  if (!props.visible) {
-    seoManager.reset();
+      } catch (error) {
+        this.selectedRating = this.userRating;
+        if (error.response && error.response.status === 403) {
+          this.toast.add({
+            severity: 'error',
+            summary: 'Unauthorized',
+            detail: 'You have already rated this preset or you are not allowed to rate your own preset.',
+            life: 3000,
+          });
+        } else {
+          this.toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to submit rating.',
+            life: 3000,
+          });
+        }
+      } finally {
+        this.isRatingInProgress = false;
+      }
+    },
+    handleApply() {
+      try {
+        const settings = typeof this.currentPreset.settings === 'string'
+          ? JSON.parse(this.currentPreset.settings)
+          : this.currentPreset.settings;
+        this.presetStore.applyPreset(settings);
+        this.handleClose();
+        this.$router.push({ name: 'equalizer' });
+      } catch (error) {
+        // Handle or log error applying preset
+      }
+    },
+    handleDownload() {
+      try {
+        const settings = JSON.stringify(JSON.parse(this.currentPreset.settings), null, 2);
+        const blob = new Blob([settings], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${this.currentPreset.name}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        this.$emit('download', this.currentPreset);
+      } catch (error) {
+        // Handle or log error downloading preset
+      }
+    },
+    handleClose() {
+      this.$emit('close');
+      if (this.$route.name === 'PresetDetail') {
+        this.$router.push({ name: this.authStore.isAuthenticated ? 'presets' : 'home' });
+      }
+    },
+    handleEscape(event) {
+      if (event.key === 'Escape' && (this.visible || (this.slug && !this.preset))) {
+        this.handleClose();
+      }
+    }
   }
-  document.removeEventListener('keydown', handleEscape);
-  document.body.style.overflow = '';
-});
+}
 </script>
 
 <style scoped>

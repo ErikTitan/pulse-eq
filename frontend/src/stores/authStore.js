@@ -68,10 +68,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        // 1. Ensure CSRF cookie is set
-        await axios.create({ withCredentials: true }).get('/sanctum/csrf-cookie')
-
-        // 2. Attempt login
+        // 1. Attempt login
         const response = await apiClient.post('/login', credentials)
         console.log('Login response:', response)
 
@@ -101,10 +98,7 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        // 1. Ensure CSRF cookie is set
-        await axios.create({ withCredentials: true }).get('/sanctum/csrf-cookie')
-
-        // 2. Attempt registration
+        // 1. Attempt registration
         const response = await apiClient.post('/register', userData)
         console.log('Register response:', response.data)
 

@@ -15,9 +15,8 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(async (config) => {
   // Get CSRF token for state-changing requests
   if (['post', 'put', 'patch', 'delete'].includes(config.method)) {
-    // Use axios.create() with a base URL for Sanctum endpoints
+    // Use axios.create() without baseURL for Sanctum endpoints
     const sanctumClient = axios.create({
-      baseURL: '/',
       withCredentials: true,
       headers: {
         Accept: 'application/json',
