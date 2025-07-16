@@ -15,6 +15,8 @@ import { WEQ8Runtime } from 'weq8';
 
 import { useAuthStore } from '@/stores/authStore';
 import { createPreset } from '@/services/presetService';
+import AudioFileSelector from '@/components/AudioFileSelector.vue';
+import AudioComparison from '@/components/AudioComparison.vue';
 
 export default {
   name: 'EqControls',
@@ -28,7 +30,9 @@ export default {
     InputText,
     Checkbox,
     Select,
-    AutoComplete
+    AutoComplete,
+    AudioFileSelector,
+    AudioComparison
   },
   props: {
     weq8: {
@@ -382,33 +386,25 @@ export default {
     },
 
     applyImportedSettings(importData) {
-      this.source.disconnect();
-      this.weq8.disconnect();
-
-      const newWeq8 = new WEQ8Runtime(this.audioContext);
       const newFilters = importData.filters.map(filter => ({
         ...filter,
         Q: filter.Q || 1,
-        bypass: filter.bypass || false
+        bypass: filter.bypass || false,
       }));
 
       this.$emit('update:filters', newFilters);
 
       newFilters.forEach((filter, index) => {
-        newWeq8.setFilterType(index, filter.type);
-        newWeq8.setFilterFrequency(index, filter.frequency);
+        this.weq8.setFilterType(index, filter.type);
+        this.weq8.setFilterFrequency(index, filter.frequency);
         if (this.equalizerStore.filterHasGain(filter.type)) {
-          newWeq8.setFilterGain(index, filter.gain);
+          this.weq8.setFilterGain(index, filter.gain);
         }
         if (this.equalizerStore.filterHasQ(filter.type)) {
-          newWeq8.setFilterQ(index, filter.Q);
+          this.weq8.setFilterQ(index, filter.Q);
         }
-        newWeq8.toggleBypass(index, filter.bypass);
+        this.weq8.toggleBypass(index, filter.bypass);
       });
-
-      this.source.connect(newWeq8.input);
-      newWeq8.connect(this.analyserNode);
-      this.$emit('update-weq8', newWeq8);
     },
 
     cancelImport() {
@@ -419,7 +415,8 @@ export default {
     clearUpload() {
       this.uploadedFile = null;
       this.importedSettings = '';
-    }
+    },
+
   }
 }
 </script>
@@ -431,6 +428,17 @@ export default {
     </template>
     <template #content>
       <Toast />
+
+      <!-- Audio File Selector -->
+      <div class="mb-4">
+        <AudioFileSelector />
+      </div>
+
+      <!-- Audio Comparison -->
+      <div class="my-4">
+        <AudioComparison />
+      </div>
+
       <div class="flex flex-col gap-2">
         <Button label="Save" severity="primary" rounded @click="handleSave" />
         <Button label="Import" outlined rounded @click="showImportDialog = true" />

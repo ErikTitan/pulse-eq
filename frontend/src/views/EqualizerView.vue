@@ -2,9 +2,11 @@
 import Card from 'primevue/card';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
+import Message from 'primevue/message';
 
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { useAuthStore } from '@/stores/authStore';
+import { useAudioUploadStore } from '@/stores/audioUploadStore';
 import GridCanvas from '@/components/GridCanvas.vue';
 import AnalyzerCanvas from '@/components/AnalyzerCanvas.vue';
 import ResponseCanvas from '@/components/ResponseCanvas.vue';
@@ -12,10 +14,12 @@ import FilterHandles from '@/components/FilterHandles.vue';
 import BandControls from '@/components/BandControls.vue';
 import EqControls from '@/components/EqControls.vue';
 import FrequencyRegions from '@/components/FrequencyRegions.vue';
+import AudioUploadManager from '@/components/AudioUploadManager.vue';
 
 export default {
   name: 'Equalizer',
   components: {
+    Message,
     Select,
     Card,
     Button,
@@ -25,14 +29,17 @@ export default {
     FilterHandles,
     BandControls,
     EqControls,
-    FrequencyRegions
+    FrequencyRegions,
+    AudioUploadManager
   },
   data() {
     const equalizerStore = useEqualizerStore();
     const authStore = useAuthStore();
+    const audioUploadStore = useAudioUploadStore();
     return {
       equalizerStore,
       authStore,
+      audioUploadStore,
       preset: {
         name: 'Equalizer',
         description: '',
@@ -50,6 +57,7 @@ export default {
       nyquist: 20000,
       showFrequencyRegions: false,
       highlightedRange: null,
+      isBrowserSupported: true,
     }
   },
   methods: {
@@ -65,15 +73,52 @@ export default {
     },
 
     async initializeAudio() {
-      this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      // Clean up existing audio context before creating a new one
+      if (this.audioContext) {
+        this.audioContext.close();
+      }
 
-      const audioPath = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href
+      // Clean up existing audio resources if they exist
+      if (this.source) {
+        this.source.disconnect();
+      }
+      if (this.weq8) {
+        this.weq8.disconnect();
+      }
+      if (this.audio) {
+        this.audio.pause();
+        this.audio = null;
+      }
+
+      // Create or reuse audio context
+      if (!this.audioContext) {
+        this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      }
+
+      // Determine audio source based on sourceId or current store selection
+      const currentSourceId = this.audioUploadStore.selectedAudioSource;
+      let audioSource;
+
+      if (currentSourceId && currentSourceId !== 'default') {
+        // Use uploaded file
+        const selectedFile = this.audioUploadStore.getFileById(currentSourceId);
+        if (selectedFile && selectedFile.objectUrl) {
+          audioSource = selectedFile.objectUrl;
+        } else {
+          // Fallback to default if uploaded file not found
+          audioSource = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href;
+        }
+      } else {
+        // Use default audio file
+        audioSource = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href;
+      }
+
       const {
         analyserNode,
         source,
         weq8,
         nyquist
-      } = await this.equalizerStore.initializeAudio(this.audioContext, audioPath)
+      } = await this.equalizerStore.initializeAudio(this.audioContext, audioSource)
 
       this.analyserNode = analyserNode
       this.source = source
@@ -131,12 +176,42 @@ export default {
 
   },
 
+  watch: {
+    // Watch for changes in the selected audio source from the store
+    'audioUploadStore.selectedAudioSource': {
+      handler(newSourceId, oldSourceId) {
+        if (newSourceId !== oldSourceId) {
+          this.initializeAudio();
+        }
+      },
+      immediate: false
+    },
+    'audioUploadStore.isOriginalAudio': {
+      handler(isOriginal) {
+        if (this.weq8) {
+          this.weq8.bypass = isOriginal;
+        }
+      }
+    }
+  },
+
   async mounted() {
-    await this.initializeAudio()
+    if (!window.AudioContext && !window.webkitAudioContext) {
+      this.isBrowserSupported = false;
+    } else {
+      await this.initializeAudio();
+    }
   },
 
   beforeUnmount() {
-    this.equalizerStore.cleanup()
+    this.equalizerStore.cleanup();
+    if (this.audioContext) {
+      this.audioContext.close();
+    }
+    if (this.source) {
+      this.source.disconnect();
+      this.source = null;
+    }
   }
 }
 </script>
@@ -144,6 +219,10 @@ export default {
 <template>
   <div class="flex flex-col min-h-screen">
     <div class="flex-1 pt-24 px-6 lg:px-20 pb-6">
+      <Message v-if="!isBrowserSupported" severity="warn" :closable="false">
+        Your browser does not support the Web Audio API, which is required for this application to function. Please use
+        a modern browser like Chrome, Firefox, or Safari.
+      </Message>
       <div class="grid grid-cols-12 gap-6">
         <!-- Left Controls -->
         <div class="col-span-12 lg:col-span-2">
@@ -192,6 +271,9 @@ export default {
               <FrequencyRegions @highlight-region="handleHighlightRegion" />
             </template>
           </Card>
+
+          <!-- Audio Upload Manager -->
+          <AudioUploadManager />
 
           <!-- Band Controls -->
           <Card class="shadow-xl">

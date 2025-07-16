@@ -27,14 +27,17 @@ export class SEOManager {
    * Set Open Graph meta tags
    */
   setOpenGraph(data) {
-    this.setMetaProperty('og:title', data.title)
-    this.setMetaProperty('og:description', data.description)
+    if (!data || typeof data !== 'object') return
+
+    if (data.title) this.setMetaProperty('og:title', data.title)
+    if (data.description) this.setMetaProperty('og:description', data.description)
     this.setMetaProperty('og:url', data.url || window.location.href)
     this.setMetaProperty('og:type', data.type || 'website')
     this.setMetaProperty('og:site_name', data.siteName || 'PulseEQ')
 
     if (data.image) {
       this.setMetaProperty('og:image', data.image)
+      this.setMetaProperty('og:image:alt', data.imageAlt || data.title || 'PulseEQ')
     }
   }
 
@@ -42,12 +45,15 @@ export class SEOManager {
    * Set Twitter Card meta tags
    */
   setTwitterCard(data) {
+    if (!data || typeof data !== 'object') return
+
     this.setMetaName('twitter:card', data.card || 'summary')
-    this.setMetaName('twitter:title', data.title)
-    this.setMetaName('twitter:description', data.description)
+    if (data.title) this.setMetaName('twitter:title', data.title)
+    if (data.description) this.setMetaName('twitter:description', data.description)
 
     if (data.image) {
       this.setMetaName('twitter:image', data.image)
+      this.setMetaName('twitter:image:alt', data.imageAlt || data.title || 'PulseEQ')
     }
   }
 
@@ -69,15 +75,33 @@ export class SEOManager {
   }
 
   /**
+   * Set canonical URL
+   */
+  setCanonical(url) {
+    let link = document.querySelector('link[rel="canonical"]')
+    if (!link) {
+      link = document.createElement('link')
+      link.setAttribute('rel', 'canonical')
+      document.head.appendChild(link)
+    }
+    link.setAttribute('href', url || window.location.href)
+  }
+
+  /**
    * Set complete SEO data for a preset
    */
   setPresetSEO(preset) {
+    if (!preset || !preset.name) return
+
     const title = `${preset.name} - PulseEQ`
-    const description = `Download and use the '${preset.name}' preset by ${preset.creator}. ${preset.description}`
+    const description = preset.description
+      ? `Download and use the '${preset.name}' preset by ${preset.creator}. ${preset.description}`
+      : `Download and use the '${preset.name}' audio equalizer preset by ${preset.creator || 'Unknown'}.`
 
     // Basic meta tags
     this.setTitle(title)
     this.setDescription(description)
+    this.setCanonical()
 
     // Open Graph
     this.setOpenGraph({
@@ -102,17 +126,19 @@ export class SEOManager {
       description: preset.description || `Audio equalizer preset: ${preset.name}`,
       applicationCategory: 'AudioApplication',
       operatingSystem: 'Web Browser',
-      author: {
-        '@type': 'Person',
-        name: preset.creator,
-      },
+      author: preset.creator
+        ? {
+            '@type': 'Person',
+            name: preset.creator,
+          }
+        : undefined,
       offers: {
         '@type': 'Offer',
         price: '0',
         priceCurrency: 'USD',
       },
       aggregateRating:
-        preset.rating > 0
+        preset.rating && preset.rating > 0
           ? {
               '@type': 'AggregateRating',
               ratingValue: preset.rating,

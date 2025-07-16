@@ -7,6 +7,7 @@ import Toast from 'primevue/toast';
 import { useThemeStore } from './stores/themeStore';
 import { useAuthStore } from './stores/authStore';
 import { usePresetCategoryStore } from './stores/presetCategoryStore';
+import { useAudioUploadStore } from './stores/audioUploadStore';
 
 export default {
   components: {
@@ -16,7 +17,7 @@ export default {
     Toast,
   },
   computed: {
-    ...mapStores(useThemeStore, useAuthStore, usePresetCategoryStore),
+    ...mapStores(useThemeStore, useAuthStore, usePresetCategoryStore, useAudioUploadStore),
   },
   methods: {
     handleShowLogin() {
@@ -30,6 +31,7 @@ export default {
     // Initialize theme on app startup
     this.themeStore.initializeTheme();
     this.authStore.validateSessionOnStartup();
+    this.audioUploadStore.cleanupExpiredFiles();
   },
 };
 </script>
