@@ -1,13 +1,13 @@
 <template>
   <div class="preset-card-wrapper">
-    <div class="preset-card" :style="cardStyle">
+    <div class="preset-card " :style="cardStyle">
       <Card class="card h-full">
         <template #header>
-          <div class="relative h-32 border-b border-surface-200 dark:border-surface-700 overflow-hidden"
-            @mousemove="handleMouseMove" @mouseleave="handleMouseLeave">
+          <div class="relative h-32 border-b border-surface overflow-hidden" @mousemove="handleMouseMove"
+            @mouseleave="handleMouseLeave">
             <div class="preset-card-glow" :style="glowStyle"></div>
-            <Chart ref="chart" type="line" :data="chartData" :options="chartOptions"
-              class="w-full h-full relative z-10" />
+            <Chart v-if="chartReady" ref="chart" type="line" :data="chartData" :options="chartOptions"
+              class="w-full h-full relative z-10" :key="`chart-${preset.id}`" />
             <Badge v-if="preset.isStaffPick" value="Staff Pick" class="absolute top-2 right-2" severity="success" />
           </div>
         </template>
@@ -23,16 +23,16 @@
         </template>
         <template #content>
           <div class="space-y-4">
-            <p ref="description" class="text-sm text-surface-600 dark:text-surface-400 min-h-[2.5rem]"
+            <p ref="description" class="text-sm text-color-secondary min-h-[2.5rem]"
               :class="{ 'line-clamp-2': !isExpanded }">{{ preset.description }}</p>
-            <button v-if="isTruncated" @click="toggleExpanded" class="text-sm text-primary-500 hover:underline">
+            <button v-if="isTruncated" @click="toggleExpanded" class="text-sm text-primary hover:underline">
               {{ isExpanded ? 'Show less' : 'Show more' }}
             </button>
             <div class="flex items-center justify-between">
               <div class="flex items-center gap-2">
                 <UserAvatar v-if="showUserAvatar && preset.user" :user="preset.user" size="small"
                   :variant="preset.user.avatar_variant || 'bauhaus'" class="flex-shrink-0" />
-                <span class="text-sm text-text-secondary">
+                <span class="text-sm text-color-secondary">
                   {{ (preset.usageCount || 0).toLocaleString() }} users
                 </span>
               </div>
@@ -48,8 +48,8 @@
                   @click="$emit('delete', preset)" tooltip="Delete" />
               </div>
             </div>
-            <div class="flex flex-wrap gap-2 pt-2 border-t border-surface-200 dark:border-surface-700">
-              <Tag v-for="tag in preset.tags" :key="tag.id" :value="tag.name" class="text-xs" />
+            <div class="flex flex-wrap gap-1 pt-1 border-t border-surface">
+              <Tag v-for="tag in limitedTags" :key="tag.id" :value="tag.name" class="text-xs py-0.5 px-1.5" />
             </div>
           </div>
         </template>
@@ -101,6 +101,7 @@ export default {
       isExpanded: false,
       isTruncated: false,
       glowStyle: {},
+      chartReady: false,
     };
   },
   computed: {
@@ -183,17 +184,38 @@ export default {
         '--glow-color-rgb': `${r}, ${g}, ${b}`
       };
     },
-  },
-  watch: {
-    chartData: {
-      handler() {
-        this.redrawChart();
-      },
-      deep: true,
+    limitedTags() {
+      if (!this.preset.tags || this.preset.tags.length === 0) return [];
+
+      const maxChars = 100;
+      let totalChars = 0;
+      const limitedTags = [];
+
+      for (const tag of this.preset.tags) {
+        const tagLength = tag.name.length;
+        if (totalChars + tagLength <= maxChars) {
+          limitedTags.push(tag);
+          totalChars += tagLength;
+        } else {
+          // If we can fit a truncated version with "...", add it
+          if (totalChars + 3 <= maxChars && limitedTags.length > 0) {
+            limitedTags.push({ ...tag, name: '...', id: 'truncated' });
+          }
+          break;
+        }
+      }
+
+      return limitedTags;
     },
   },
+
   mounted() {
     this.checkTruncation();
+
+    // Small delay to ensure all reactive dependencies have settled during navigation
+    setTimeout(() => {
+      this.chartReady = true;
+    }, 16); // One animation frame (~16ms)
   },
   updated() {
     this.checkTruncation();
@@ -226,11 +248,7 @@ export default {
     toggleExpanded() {
       this.isExpanded = !this.isExpanded;
     },
-    redrawChart() {
-      if (this.$refs.chart) {
-        this.$refs.chart.reinit();
-      }
-    },
+
     handleMouseMove(e) {
       const card = e.currentTarget;
       const rect = card.getBoundingClientRect();
@@ -282,12 +300,8 @@ export default {
   z-index: 0;
 }
 
-.preset-card:hover {
-  transform: translateY(-2px);
-}
-
 :deep(.p-card) {
-  @apply h-full bg-surface-0 dark:bg-surface-900;
+  @apply h-full;
   transition: box-shadow 0.3s ease-in-out;
 }
 

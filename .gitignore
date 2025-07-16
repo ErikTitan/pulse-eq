@@ -13,3 +13,5 @@
 # Logs
 logs
 *.log
+
+.kiro/

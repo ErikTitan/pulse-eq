@@ -138,6 +138,57 @@ export default {
           return;
         }
 
+        // Validate tag limits
+        if (this.savePresetForm.tags.length > 10) {
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Too Many Tags',
+            detail: 'Maximum 10 tags allowed',
+            life: 3000
+          });
+          return;
+        }
+
+        // Validate individual tag length
+        for (const tag of this.savePresetForm.tags) {
+          if (tag.length > 20) {
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Tag Too Long',
+              detail: `Tag "${tag}" exceeds 20 character limit`,
+              life: 3000
+            });
+            return;
+          }
+        }
+
+        // Validate total character count
+        const totalChars = this.savePresetForm.tags.reduce((sum, tag) => sum + tag.length, 0);
+        if (totalChars > 100) {
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Tags Too Long',
+            detail: 'Combined length of all tags cannot exceed 100 characters',
+            life: 3000
+          });
+          return;
+        }
+
+        // Basic profanity check (you can enhance this with a proper profanity filter)
+        const profanityWords = ['fuck', 'shit', 'damn', 'bitch', 'ass', 'hell']; // Add more as needed
+        for (const tag of this.savePresetForm.tags) {
+          const tagLower = tag.toLowerCase();
+          if (profanityWords.some(word => tagLower.includes(word))) {
+            this.$toast.add({
+              severity: 'error',
+              summary: 'Inappropriate Content',
+              detail: `Tag "${tag}" contains inappropriate content`,
+              life: 3000
+            });
+            return;
+          }
+        }
+
         const settings = this.filters.map(filter => ({
           type: filter.type,
           frequency: filter.frequency,
@@ -173,12 +224,30 @@ export default {
           tags: [],
         };
       } catch (error) {
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Error',
-          detail: 'Failed to save preset',
-          life: 3000
-        });
+        // Handle validation errors from backend
+        if (error.response?.status === 422 && error.response?.data?.errors) {
+          const errors = error.response.data.errors;
+
+          // Show specific validation errors
+          Object.keys(errors).forEach(field => {
+            errors[field].forEach(message => {
+              this.$toast.add({
+                severity: 'error',
+                summary: 'Validation Error',
+                detail: message,
+                life: 5000
+              });
+            });
+          });
+        } else {
+          // Generic error for other types of failures
+          this.$toast.add({
+            severity: 'error',
+            summary: 'Error',
+            detail: 'Failed to save preset',
+            life: 3000
+          });
+        }
       }
     },
 

@@ -1,19 +1,14 @@
 <template>
   <div class="mini-eq-preview">
-    <div class="eq-header">
-      <h3 class="text-lg font-bold text-white">{{ preset.name }}</h3>
-      <p class="text-sm text-gray-400">by {{ preset.creator }}</p>
-    </div>
-
     <!-- Mini EQ Visualization -->
-    <div class="eq-visualization bg-gray-900 rounded-lg p-4 mb-4">
+    <div class="eq-visualization rounded-lg p-4 mb-4">
       <canvas ref="eqCanvas" width="300" height="120" class="w-full h-auto"></canvas>
     </div>
 
     <!-- Frequency Response Info -->
     <div class="frequency-info mb-4">
       <div class="flex flex-wrap gap-2">
-        <div v-for="band in frequencyBands" :key="band.frequency" class="text-xs bg-gray-700 px-2 py-1 rounded">
+        <div v-for="band in frequencyBands" :key="band.frequency" class="text-xs frequency-band px-2 py-1 rounded">
           {{ formatFrequency(band.frequency) }}: {{ formatGain(band.gain) }}
         </div>
       </div>
@@ -21,21 +16,20 @@
 
     <!-- Action Buttons -->
     <div class="action-buttons flex space-x-2">
-      <button @click="$emit('apply', preset)"
-        class="flex-1 bg-green-500 hover:bg-green-600 text-white py-2 px-4 rounded-lg">
-        Apply Preset
-      </button>
-      <button @click="$emit('download', preset)"
-        class="flex-1 bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg">
-        Download
-      </button>
+      <Button @click="$emit('apply', preset)" label="Apply Preset" severity="success" class="flex-1" />
+      <Button @click="$emit('download', preset)" label="Download" severity="info" class="flex-1" />
     </div>
   </div>
 </template>
 
 <script>
+import Button from 'primevue/button'
+
 export default {
   name: 'MiniEqPreview',
+  components: {
+    Button
+  },
   props: {
     preset: {
       type: Object,
@@ -104,8 +98,9 @@ export default {
       ctx.lineWidth = 2;
       ctx.fillStyle = `${color}20`;
 
-      // Draw grid
-      ctx.strokeStyle = '#374151';
+      // Draw grid - use theme-aware color
+      const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--p-surface-400').trim() || '#6b7280';
+      ctx.strokeStyle = gridColor;
       ctx.lineWidth = 1;
 
       // Horizontal grid lines (gain levels)
@@ -162,11 +157,23 @@ export default {
 
 <style scoped>
 .mini-eq-preview {
-  @apply bg-gray-800 rounded-lg p-6 max-w-md mx-auto;
+  background: transparent;
+  @apply rounded-lg p-6 max-w-md mx-auto;
+}
+
+.eq-visualization {
+  background: var(--p-surface-ground);
 }
 
 .eq-visualization canvas {
-  @apply bg-gray-900 rounded;
+  background: var(--p-surface-0);
+  @apply rounded;
+}
+
+.frequency-band {
+  background: var(--p-surface-ground);
+  border: 1px solid var(--p-surface-border);
+  color: var(--p-text-color);
 }
 
 .line-clamp-2 {

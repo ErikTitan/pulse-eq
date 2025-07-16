@@ -1,23 +1,23 @@
 <template>
   <div v-if="visible || slug" class="preset-preview-modal fixed inset-0 z-50 flex items-center justify-center p-4">
     <!-- Backdrop -->
-    <div class="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm" @click="handleClose"></div>
+    <div class="fixed inset-0 bg-black bg-opacity-70 backdrop-blur-sm" @click="handleClose"></div>
 
     <!-- Modal Content -->
     <div class="relative max-w-lg w-full">
-      <Card class="overflow-hidden shadow-2xl">
+      <Card class="overflow-hidden shadow-2xl modal-card">
         <template #content>
           <!-- Loading State -->
           <div v-if="loading" class="text-center py-8">
-            <i class="pi pi-spin pi-spinner text-primary-500" style="font-size: 2rem"></i>
-            <p class="text-surface-600 dark:text-surface-400 mt-4">Loading preset...</p>
+            <i class="pi pi-spin pi-spinner text-primary" style="font-size: 2rem"></i>
+            <p class="text-color-secondary mt-4">Loading preset...</p>
           </div>
 
           <!-- Error State -->
           <div v-else-if="error" class="text-center py-8">
             <div class="text-red-500 text-4xl mb-4">⚠️</div>
-            <h2 class="text-xl font-bold text-surface-800 dark:text-surface-100 mb-2">Preset Not Found</h2>
-            <p class="text-surface-600 dark:text-surface-400 mb-4">The preset you're looking for doesn't exist or has
+            <h2 class="text-xl font-bold text-color mb-2">Preset Not Found</h2>
+            <p class="text-color-secondary mb-4">The preset you're looking for doesn't exist or has
               been removed.</p>
             <Button label="Go Back" icon="pi pi-arrow-left" @click="handleClose" />
           </div>
@@ -26,36 +26,34 @@
           <div v-else-if="currentPreset" class="preset-content">
             <!-- Close Button -->
             <button @click="handleClose"
-              class="absolute top-4 right-4 text-surface-500 hover:text-surface-800 dark:hover:text-surface-100 z-10 transition-colors">
+              class="absolute top-4 right-4 text-color-secondary hover:text-color z-10 transition-colors">
               <i class="pi pi-times text-xl"></i>
             </button>
 
             <!-- Header Section -->
             <div class="mb-6 pr-8">
-              <h1 class="text-2xl font-bold text-surface-800 dark:text-surface-100 mb-2">{{ currentPreset.name }}</h1>
-              <div
-                class="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-surface-600 dark:text-surface-400 mb-4">
+              <h1 class="text-2xl font-bold text-color mb-2">{{ currentPreset.name }}</h1>
+              <div class="flex items-center flex-wrap gap-x-3 gap-y-1 text-sm text-color-secondary mb-4">
                 <span>by {{ currentPreset.user?.name || currentPreset.creator || 'Anonymous' }}</span>
-                <span class="text-surface-400 dark:text-surface-600">•</span>
+                <span class="text-color-secondary">•</span>
                 <span>{{ (currentPreset.uses_count || currentPreset.usageCount || 0) }} users</span>
-                <span class="text-surface-400 dark:text-surface-600">•</span>
+                <span class="text-color-secondary">•</span>
                 <Tag :value="currentPreset.preset_category?.name || 'General'" class="text-xs" />
               </div>
 
               <!-- Rating Section -->
               <div v-if="authStore.isAuthenticated && authStore.user?.id !== currentPreset.user?.id"
-                class="flex items-center justify-between p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
+                class="flex items-center justify-between p-3 surface-50 rounded-lg border surface-border">
                 <div class="flex items-center gap-3">
-                  <span class="text-sm text-surface-700 dark:text-surface-300 font-medium">Your Rating:</span>
+                  <span class="text-sm text-color font-medium">Your Rating:</span>
                   <Rating v-model="selectedRating"
                     :readonly="!authStore.isAuthenticated || isRatingInProgress || authStore.user?.id === currentPreset.user?.id || userRating > 0"
                     :cancel="false" />
                 </div>
-                <div
-                  class="text-right text-sm text-surface-700 dark:text-surface-300 font-medium flex items-center gap-2">
+                <div class="text-right text-sm text-color font-medium flex items-center gap-2">
                   <Button v-if="showSubmitButton" label="Submit" @click="submitRating" :loading="isRatingInProgress"
                     class="p-button-sm" />
-                  <i class="pi pi-star-fill text-primary-500"></i>
+                  <i class="pi pi-star-fill text-primary"></i>
                 </div>
               </div>
             </div>
@@ -68,23 +66,22 @@
 
             <!-- Description -->
             <div v-if="currentPreset.description" class="mb-4">
-              <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Description</h3>
-              <p
-                class="text-sm text-surface-600 dark:text-surface-400 leading-relaxed p-3 bg-surface-50 dark:bg-surface-800 rounded-lg border border-surface-200 dark:border-surface-700">
+              <h3 class="text-sm font-semibold text-color mb-2">Description</h3>
+              <p class="text-sm text-color-secondary leading-relaxed p-3 surface-50 rounded-lg border surface-border">
                 {{ currentPreset.description }}
               </p>
             </div>
 
             <!-- Tags -->
             <div v-if="currentPreset.tags?.length" class="mb-4">
-              <h3 class="text-sm font-semibold text-surface-700 dark:text-surface-300 mb-2">Tags</h3>
+              <h3 class="text-sm font-semibold text-color mb-2">Tags</h3>
               <div class="flex flex-wrap gap-2">
                 <Tag v-for="tag in currentPreset.tags" :key="tag.id" :value="tag.name" />
               </div>
             </div>
 
             <!-- Additional Details -->
-            <div v-if="currentPreset.created_at" class="text-xs text-surface-500 dark:text-surface-400">
+            <div v-if="currentPreset.created_at" class="text-xs text-color-secondary">
               Created on {{ formatDate(currentPreset.created_at) }}
             </div>
 
@@ -119,7 +116,7 @@ import Rating from 'primevue/rating';
 import Tag from 'primevue/tag';
 import { useToast } from 'primevue/usetoast';
 import { seoManager } from '@/utils/seoManager';
-import { ratePreset } from '@/services/presetService';
+import { ratePreset, usePreset } from '@/services/presetService';
 import axios from '@/axios';
 
 export default {
@@ -276,16 +273,34 @@ export default {
         this.isRatingInProgress = false;
       }
     },
-    handleApply() {
+    async handleApply() {
       try {
         const settings = typeof this.currentPreset.settings === 'string'
           ? JSON.parse(this.currentPreset.settings)
           : this.currentPreset.settings;
+
+        // Apply preset locally
         this.presetStore.applyPreset(settings);
+
+        // Track usage on backend (increment counter)
+        if (this.currentPreset.slug) {
+          try {
+            await usePreset(this.currentPreset.slug);
+            // Optionally update the local usage count
+            if (this.fetchedPreset) {
+              this.fetchedPreset.uses_count = (this.fetchedPreset.uses_count || 0) + 1;
+            }
+          } catch (apiError) {
+            // Don't block the user experience if API call fails
+            console.warn('Failed to track preset usage:', apiError);
+          }
+        }
+
         this.handleClose();
         this.$router.push({ name: 'equalizer' });
       } catch (error) {
         // Handle or log error applying preset
+        console.error('Error applying preset:', error);
       }
     },
     handleDownload() {
@@ -353,5 +368,10 @@ export default {
 
 :deep(.p-rating .p-rating-icon.p-rating-icon-active) {
   color: var(--p-primary-color);
+}
+
+:deep(.modal-card) {
+  background: var(--p-surface-800);
+  border: 1px solid var(--p-surface-border);
 }
 </style>

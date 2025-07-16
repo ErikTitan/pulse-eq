@@ -39,8 +39,8 @@ class PresetController extends Controller
             'public' => 'boolean',
             'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
-            'tags' => 'required|array|min:1',
-            'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
+            'tags' => $this->getTagValidationRules(),
+            'tags.*' => [new AsciiOnly, 'blasp_check'],
         ]);
 
         // Sanitize user input
@@ -75,8 +75,8 @@ class PresetController extends Controller
             'public' => 'boolean',
             'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
-            'tags' => 'required|array|min:1',
-            'tags.*' => ['string', 'max:255', new AsciiOnly, 'blasp_check'],
+            'tags' => $this->getTagValidationRules(),
+            'tags.*' => [new AsciiOnly, 'blasp_check'],
         ]);
 
         // Sanitize user input
@@ -120,5 +120,29 @@ class PresetController extends Controller
                 $query->where('user_id', auth()->id());
             }
         ])->append('user_rating'));
+    }
+
+    private function getTagValidationRules()
+    {
+        return [
+            'required',
+            'array',
+            'min:1',
+            'max:10',
+            function (mixed $value, \Closure $fail) {
+                // Validate each tag
+                foreach ($value as $tag) {
+                    if (!is_string($tag) || strlen($tag) > 20) {
+                        $fail('Each tag must be a string with maximum 20 characters.');
+                        return;
+                    }
+                }
+                // Validate total character count
+                $totalChars = collect($value)->sum(fn($tag) => strlen($tag));
+                if ($totalChars > 100) {
+                    $fail('The combined length of all tags cannot exceed 100 characters.');
+                }
+            }
+        ];
     }
 }
