@@ -8,6 +8,7 @@ import { definePreset } from '@primevue/themes'
 import App from './App.vue'
 import router from './router'
 import ToastService from 'primevue/toastservice'
+import toast from '@/utils/toast'
 
 import 'primeicons/primeicons.css'
 import Ripple from 'primevue/ripple'
@@ -677,6 +678,7 @@ pinia.use(piniaPluginPersistedstate)
 app.use(pinia)
 app.use(router)
 app.use(ToastService)
+app.use(toast)
 app.use(PrimeVue, {
   ripple: true,
   theme: {

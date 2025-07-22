@@ -74,9 +74,6 @@ export default {
 
     async initializeAudio() {
       // Clean up existing audio context before creating a new one
-      if (this.audioContext) {
-        this.audioContext.close();
-      }
 
       // Clean up existing audio resources if they exist
       if (this.source) {
@@ -91,19 +88,24 @@ export default {
       }
 
       // Create or reuse audio context
-      if (!this.audioContext) {
+      if (!this.audioContext || this.audioContext.state === 'closed') {
         this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
       }
 
       // Determine audio source based on sourceId or current store selection
       const currentSourceId = this.audioUploadStore.selectedAudioSource;
       let audioSource;
+      let audioBuffer = null;
 
       if (currentSourceId && currentSourceId !== 'default') {
         // Use uploaded file
         const selectedFile = this.audioUploadStore.getFileById(currentSourceId);
-        if (selectedFile && selectedFile.objectUrl) {
+        console.log('[EqualizerView] Selected file from store:', selectedFile);
+        if (selectedFile) {
           audioSource = selectedFile.objectUrl;
+          audioBuffer = selectedFile.audioBuffer;
+          console.log('[EqualizerView] Using uploaded file. URL:', audioSource);
+          console.log('[EqualizerView] Using uploaded file. Buffer:', audioBuffer);
         } else {
           // Fallback to default if uploaded file not found
           audioSource = new URL('@/assets/audio/sample_audio.mp3', import.meta.url).href;
@@ -118,7 +120,7 @@ export default {
         source,
         weq8,
         nyquist
-      } = await this.equalizerStore.initializeAudio(this.audioContext, audioSource)
+      } = await this.equalizerStore.initializeAudio(this.audioContext, audioSource, audioBuffer)
 
       this.analyserNode = analyserNode
       this.source = source
@@ -181,6 +183,7 @@ export default {
     'audioUploadStore.selectedAudioSource': {
       handler(newSourceId, oldSourceId) {
         if (newSourceId !== oldSourceId) {
+          console.log(`[EqualizerView] Audio source changed from "${oldSourceId}" to "${newSourceId}". Re-initializing audio.`);
           this.initializeAudio();
         }
       },

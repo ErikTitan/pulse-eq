@@ -56,14 +56,13 @@ services:
         depends_on:
             - mysql
     mysql:
-        image: "mysql/mysql-server:8.0"
+        image: "mysql:8.0"
         ports:
             - "${FORWARD_DB_PORT:-3306}:3306"
         environment:
             MYSQL_ROOT_PASSWORD: "${DB_PASSWORD}"
-            MYSQL_ROOT_HOST: "%"
             MYSQL_DATABASE: "${DB_DATABASE}"
-            MYSQL_USER: "${DB_USERNAME}"
+            MYSQL_USER: "laravel"
             MYSQL_PASSWORD: "${DB_PASSWORD}"
             MYSQL_ALLOW_EMPTY_PASSWORD: 1
         volumes:
@@ -72,13 +71,18 @@ services:
         networks:
             - sail
         healthcheck:
-            test:
-                - CMD
-                - mysqladmin
-                - ping
-                - "-p${DB_PASSWORD}"
-            retries: 3
-            timeout: 5s
+            test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+            timeout: 20s
+            retries: 10
+        restart: unless-stopped
+        command: >
+            --default-authentication-plugin=mysql_native_password
+            --bind-address=0.0.0.0
+            --skip-host-cache
+            --skip-name-resolve
+            --innodb-use-native-aio=0
+            --character-set-server=utf8mb4
+            --collation-server=utf8mb4_unicode_ci
     qdrant:
         image: qdrant/qdrant
         ports:

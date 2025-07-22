@@ -3,6 +3,7 @@ import AudioFileProcessor, {
   AudioFileError,
   AudioFileErrorTypes,
 } from '../utils/AudioFileProcessor.js'
+import { useToast } from '@/utils/toast'
 
 export const useAudioUploadStore = defineStore('audioUpload', {
   state: () => ({
@@ -18,9 +19,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
     // Current audio file reference
     currentAudioFile: null,
-
-    // The actual AudioBuffer for the current file
-    currentAudioBuffer: null,
 
     // Original/processed audio toggle for preset comparison
     isOriginalAudio: true,
@@ -72,12 +70,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       const selectedFile = state.uploadedFiles.find((file) => file.id === state.selectedAudioSource)
       return selectedFile ? selectedFile.objectUrl : null
     },
-
-    // Get the current AudioBuffer
-    currentAudioBuffer: (state) => {
-      const selectedFile = state.uploadedFiles.find((file) => file.id === state.selectedAudioSource)
-      return selectedFile ? selectedFile.audioBuffer : null
-    },
   },
 
   actions: {
@@ -115,22 +107,35 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
         // Add to uploaded files
         this.uploadedFiles.push(processedFile)
+        console.log('[audioUploadStore] Processed file:', processedFile)
 
         // Set as current audio file and buffer
         this.currentAudioFile = processedFile
-        this.currentAudioBuffer = processedFile.audioBuffer
+
+        // Find the file in the state and attach the buffer
+        const fileInState = this.uploadedFiles.find((f) => f.id === processedFile.id)
+        if (fileInState) {
+          fileInState.audioBuffer = processedFile.audioBuffer
+          console.log(
+            '[audioUploadStore] AudioBuffer attached to file in state:',
+            fileInState.audioBuffer,
+          )
+        }
 
         // Auto-select the uploaded file
         this.selectedAudioSource = processedFile.id
 
         this.processingProgress = 100
 
-        this.$toast.add({
-          severity: 'success',
-          summary: 'File Uploaded',
-          detail: `Successfully processed "${processedFile.name}".`,
-          life: 3000,
-        })
+        const toast = useToast()
+        if (toast) {
+          toast.add({
+            severity: 'success',
+            summary: 'File Uploaded',
+            detail: `Successfully processed "${processedFile.name}".`,
+            life: 3000,
+          })
+        }
 
         return processedFile
       } catch (error) {
@@ -140,12 +145,15 @@ export const useAudioUploadStore = defineStore('audioUpload', {
             ? error
             : new AudioFileError(AudioFileErrorTypes.PROCESSING_FAILED)
 
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Upload Failed',
-          detail: this.lastError.message,
-          life: 5000,
-        })
+        const toast = useToast()
+        if (toast) {
+          toast.add({
+            severity: 'error',
+            summary: 'Upload Failed',
+            detail: this.lastError.message,
+            life: 5000,
+          })
+        }
 
         throw this.lastError
       } finally {
@@ -189,7 +197,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         if (this.selectedAudioSource === fileId) {
           this.selectedAudioSource = 'default'
           this.currentAudioFile = null
-          this.currentAudioBuffer = null
         }
 
         return true
@@ -209,20 +216,19 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       this.uploadedFiles = []
       this.selectedAudioSource = 'default'
       this.currentAudioFile = null
-      this.currentAudioBuffer = null
       this.isOriginalAudio = true
     },
 
     // Set selected audio source
     setSelectedAudioSource(sourceId) {
       this.selectedAudioSource = sourceId
+      console.log(`[audioUploadStore] setSelectedAudioSource: ${sourceId}`)
 
       if (sourceId === 'default') {
         this.currentAudioFile = null
-        this.currentAudioBuffer = null
       } else {
         this.currentAudioFile = this.uploadedFiles.find((file) => file.id === sourceId) || null
-        this.currentAudioBuffer = this.currentAudioFile ? this.currentAudioFile.audioBuffer : null
+        console.log('[audioUploadStore] Found file in store:', this.currentAudioFile)
       }
 
       // Reset to original audio when switching sources
@@ -312,60 +318,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
           this.removeFile(fileId)
         })
       }
-    },
-  },
-
-  // Persist state to localStorage with custom serialization
-  persist: {
-    key: 'audioUpload',
-    storage: localStorage,
-    paths: ['selectedAudioSource', 'uploadedFiles'], // Persist uploadedFiles metadata
-    serializer: {
-      serialize: (state) => {
-        // Only serialize basic file info, not File objects or URLs
-        const serializedState = {
-          selectedAudioSource: state.selectedAudioSource,
-          uploadedFiles: state.uploadedFiles.map((file) => ({
-            id: file.id,
-            name: file.name,
-            size: file.size,
-            type: file.type,
-            duration: file.duration,
-            sampleRate: file.sampleRate,
-            numberOfChannels: file.numberOfChannels,
-            uploadedAt: file.uploadedAt,
-            isDefault: file.isDefault,
-          })),
-        }
-        return JSON.stringify(serializedState)
-      },
-      deserialize: (serializedState) => {
-        try {
-          const state = JSON.parse(serializedState)
-          // Restore metadata, but not File objects or object URLs
-          return {
-            ...state,
-            uploadedFiles: state.uploadedFiles || [],
-            // Ensure other non-persisted state is reset
-            isProcessing: false,
-            processingProgress: 0,
-            currentAudioFile: null,
-            currentAudioBuffer: null,
-            lastError: null,
-          }
-        } catch {
-          // On error, return a clean default state
-          return {
-            uploadedFiles: [],
-            selectedAudioSource: 'default',
-            isProcessing: false,
-            processingProgress: 0,
-            currentAudioFile: null,
-            currentAudioBuffer: null,
-            lastError: null,
-          }
-        }
-      },
     },
   },
 })

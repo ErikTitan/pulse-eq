@@ -41,6 +41,7 @@ export const useEqualizerStore = defineStore('equalizer', {
     source: null,
     weq8: null,
     nyquist: 20000,
+    audioBuffer: null,
   }),
 
   getters: {
@@ -121,22 +122,39 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.updateState()
       }
     },
-    async initializeAudio(audioContext, audioPath) {
-      this.audioContext = audioContext;
+    async initializeAudio(audioContext, audioPath, audioBuffer = null) {
+      console.log('[equalizerStore] initializeAudio called with audioPath:', audioPath)
+      console.log('[equalizerStore] initializeAudio called with audioBuffer:', audioBuffer)
+      this.audioContext = audioContext
+      this.audioBuffer = audioBuffer
 
-      this.audio = new Audio(audioPath)
-      this.source = this.audioContext.createMediaElementSource(this.audio)
-      this.weq8 = new WEQ8Runtime(this.audioContext)
+      // Clean up previous sources
+      if (this.source) {
+        this.source.disconnect()
+      }
+      if (this.audio) {
+        this.audio.pause()
+        this.audio = null
+      }
 
-      // Initialize analyzer node
-      this.analyserNode = this.audioContext.createAnalyser()
-      this.analyserNode.fftSize = 8192
-      this.analyserNode.smoothingTimeConstant = 0.5
+      // Setup weq8 and analyser if they don't exist or context was closed
+      if (!this.weq8 || this.weq8.input.context.state === 'closed') {
+        this.weq8 = new WEQ8Runtime(this.audioContext)
+        this.analyserNode = this.audioContext.createAnalyser()
+        this.analyserNode.fftSize = 8192
+        this.analyserNode.smoothingTimeConstant = 0.5
+        this.weq8.connect(this.analyserNode)
+        this.analyserNode.connect(this.audioContext.destination)
+      }
 
-      // Set up audio routing
-      this.source.connect(this.weq8.input)
-      this.weq8.connect(this.analyserNode)
-      this.analyserNode.connect(this.audioContext.destination)
+      // Create source for default audio (from path), but not for buffer
+      if (!audioBuffer && audioPath) {
+        this.audio = new Audio(audioPath)
+        this.source = this.audioContext.createMediaElementSource(this.audio)
+        this.source.connect(this.weq8.input)
+      } else {
+        this.source = null // Ensure source is null for buffer-based playback initially
+      }
 
       // Try to load saved state
       const savedState = this.loadFromLocalStorage()
@@ -199,11 +217,41 @@ export const useEqualizerStore = defineStore('equalizer', {
       if (this.audioContext.state === 'suspended') {
         await this.audioContext.resume()
       }
-      await this.audio.play()
+
+      if (this.audio) {
+        console.log('[equalizerStore] Playing from audio element.')
+        await this.audio.play()
+      } else if (this.audioBuffer) {
+        console.log('[equalizerStore] Playing from audio buffer.')
+        // If a source is playing, stop and disconnect it.
+        if (this.source) {
+          try {
+            this.source.stop()
+          } catch (e) {}
+          this.source.disconnect()
+        }
+        this.source = this.audioContext.createBufferSource()
+        this.source.buffer = this.audioBuffer
+        this.source.connect(this.weq8.input)
+        this.source.start(0)
+        console.log('[equalizerStore] Audio buffer playback started.')
+      } else {
+        console.warn(
+          '[equalizerStore] playAudio called but no audio source or buffer is available.',
+        )
+      }
     },
 
     pauseAudio() {
-      this.audio?.pause()
+      if (this.audio) {
+        this.audio.pause()
+      } else if (this.source) {
+        try {
+          this.source.stop()
+        } catch (e) {
+          console.warn('Could not stop audio source, it may have already been stopped.', e)
+        }
+      }
     },
 
     cleanup() {

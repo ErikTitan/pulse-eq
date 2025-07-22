@@ -36,28 +36,11 @@ export default {
 
       const file = files[0];
 
-      // Inline validation
-      if (!AudioFileProcessor.isValidFileType(file.type)) {
-        this.$toast.add({
-          severity: 'error',
-          summary: 'Invalid File Type',
-          detail: `File type "${file.type}" is not supported.`,
-          life: 5000,
-        });
-        return;
-      }
-
-      if (!AudioFileProcessor.isValidFileSize(file.size)) {
-        this.$toast.add({
-          severity: 'error',
-          summary: 'File Too Large',
-          detail: `File size exceeds the ${AudioFileProcessor.MAX_FILE_SIZE / 1024 / 1024}MB limit.`,
-          life: 5000,
-        });
-        return;
-      }
-
-      this.audioUploadStore.processFile(file);
+      this.audioUploadStore.processFile(file).catch(error => {
+        // The store now handles toast notifications, but you can add
+        // additional component-specific error handling here if needed.
+        console.error('Error processing file in component:', error);
+      });
     },
     handleDrop(event) {
       event.preventDefault();

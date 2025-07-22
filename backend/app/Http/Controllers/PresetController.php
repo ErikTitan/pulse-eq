@@ -129,7 +129,7 @@ class PresetController extends Controller
             'array',
             'min:1',
             'max:10',
-            function (mixed $value, \Closure $fail) {
+            function (string $attribute, mixed $value, \Closure $fail) {
                 // Validate each tag
                 foreach ($value as $tag) {
                     if (!is_string($tag) || strlen($tag) > 20) {
