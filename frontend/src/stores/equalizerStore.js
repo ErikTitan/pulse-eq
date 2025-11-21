@@ -145,6 +145,15 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.analyserNode.smoothingTimeConstant = 0.5
         this.weq8.connect(this.analyserNode)
         this.analyserNode.connect(this.audioContext.destination)
+      } else {
+        // Ensure connections are maintained when reusing weq8
+        try {
+          this.weq8.connect(this.analyserNode)
+          this.analyserNode.connect(this.audioContext.destination)
+        } catch (e) {
+          // Ignore errors if already connected
+          console.warn('[equalizerStore] Reconnection warning:', e)
+        }
       }
 
       // Create source for default audio (from path), but not for buffer

@@ -79,9 +79,6 @@ export default {
       if (this.source) {
         this.source.disconnect();
       }
-      if (this.weq8) {
-        this.weq8.disconnect();
-      }
       if (this.audio) {
         this.audio.pause();
         this.audio = null;
