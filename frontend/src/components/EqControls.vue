@@ -17,6 +17,7 @@ import { useAuthStore } from '@/stores/authStore';
 import { createPreset } from '@/services/presetService';
 import AudioFileSelector from '@/components/AudioFileSelector.vue';
 import AudioComparison from '@/components/AudioComparison.vue';
+import AudioUploadManager from '@/components/AudioUploadManager.vue';
 
 export default {
   name: 'EqControls',
@@ -32,7 +33,8 @@ export default {
     Select,
     AutoComplete,
     AudioFileSelector,
-    AudioComparison
+    AudioComparison,
+    AudioUploadManager
   },
   props: {
     weq8: {
@@ -73,6 +75,7 @@ export default {
       showExportDialog: false,
       showImportDialog: false,
       showSaveDialog: false,
+      showUploadDialog: false,
       exportedSettings: '',
       importedSettings: '',
       savePresetForm: {
@@ -431,19 +434,30 @@ export default {
 
       <!-- Audio File Selector -->
       <div class="mb-4">
+        <label class="block text-sm font-medium text-surface-600 mb-1.5">Audio Source</label>
         <AudioFileSelector />
       </div>
 
       <!-- Audio Comparison -->
-      <div class="my-4">
+      <div class="mb-6">
         <AudioComparison />
       </div>
 
       <div class="flex flex-col gap-2">
-        <Button label="Save" severity="primary" rounded @click="handleSave" />
-        <Button label="Import" outlined rounded @click="showImportDialog = true" />
-        <Button label="Reset" severity="secondary" outlined rounded @click="resetEQ" />
+        <Button label="Upload Audio" icon="pi pi-cloud-upload" severity="info" outlined size="small" rounded
+          @click="showUploadDialog = true" />
+        <div class="h-px bg-surface-200 my-1"></div>
+        <Button label="Save Preset" icon="pi pi-save" severity="primary" size="small" rounded @click="handleSave" />
+        <Button label="Import Preset" icon="pi pi-file-import" severity="secondary" outlined size="small" rounded
+          @click="showImportDialog = true" />
+        <Button label="Reset EQ" icon="pi pi-refresh" severity="danger" text size="small" rounded @click="resetEQ" />
       </div>
+
+      <!-- Audio Upload Dialog -->
+      <Dialog v-model:visible="showUploadDialog" header="Upload Audio File" modal :style="{ width: '450px' }"
+        :draggable="false">
+        <AudioUploadManager />
+      </Dialog>
 
       <!-- Save Preset Dialog -->
       <Dialog v-model:visible="showSaveDialog" header="Save Preset" modal style="width: 50vw">

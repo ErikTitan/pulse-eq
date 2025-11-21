@@ -477,5 +477,18 @@ export const useEqualizerStore = defineStore('equalizer', {
     getDefaultFilters() {
       return [...this.defaultFilters]
     },
+    setGlobalBypass(bypass) {
+      if (!this.weq8) return
+
+      if (bypass) {
+        // Bypass all filters
+        for (let i = 0; i < 8; i++) {
+          this.weq8.toggleBypass(i, true)
+        }
+      } else {
+        // Restore filter states from store
+        this.syncWeq8Filters()
+      }
+    },
   },
 })

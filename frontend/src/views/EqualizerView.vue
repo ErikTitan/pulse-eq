@@ -188,9 +188,7 @@ export default {
     },
     'audioUploadStore.isOriginalAudio': {
       handler(isOriginal) {
-        if (this.weq8) {
-          this.weq8.bypass = isOriginal;
-        }
+        this.equalizerStore.setGlobalBypass(isOriginal);
       }
     }
   },
@@ -271,9 +269,6 @@ export default {
               <FrequencyRegions @highlight-region="handleHighlightRegion" />
             </template>
           </Card>
-
-          <!-- Audio Upload Manager -->
-          <AudioUploadManager />
 
           <!-- Band Controls -->
           <Card class="shadow-xl">

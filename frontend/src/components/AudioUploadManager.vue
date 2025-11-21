@@ -1,14 +1,11 @@
 <script>
-import Card from "primevue/card";
 import Button from "primevue/button";
 import ProgressBar from "primevue/progressbar";
 import { useAudioUploadStore } from "@/stores/audioUploadStore";
-import AudioFileProcessor from "@/utils/AudioFileProcessor";
 
 export default {
   name: "AudioUploadManager",
   components: {
-    Card,
     Button,
     ProgressBar,
   },
@@ -37,8 +34,6 @@ export default {
       const file = files[0];
 
       this.audioUploadStore.processFile(file).catch(error => {
-        // The store now handles toast notifications, but you can add
-        // additional component-specific error handling here if needed.
         console.error('Error processing file in component:', error);
       });
     },
@@ -61,48 +56,54 @@ export default {
 </script>
 
 <template>
-  <Card class="shadow-lg">
-    <template #title>
-      <div class="text-xl font-semibold mb-4">Upload Audio File</div>
-    </template>
-    <template #content>
-      <div class="border-2 border-dashed rounded-lg p-8 text-center transition-colors" :class="{
-        'border-primary-300 bg-primary-50': dragActive,
-        'border-surface-300': !dragActive,
-      }" @drop="handleDrop" @dragover.prevent @dragenter.prevent="handleDragEnter"
-        @dragleave.prevent="handleDragLeave">
-        <i class="pi pi-cloud-upload text-4xl text-surface-400 mb-4"></i>
-        <p class="text-surface-600 mb-4">
-          Drag and drop your audio file here, or click to browse
+  <div class="audio-upload-manager">
+    <div class="border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 ease-in-out group" :class="{
+      'border-primary-500 bg-primary-50/50 dark:bg-primary-900/20': dragActive,
+      'border-surface-200 dark:border-surface-700 hover:border-primary-300 dark:hover:border-primary-700 hover:bg-surface-50 dark:hover:bg-surface-800': !dragActive,
+    }" @drop="handleDrop" @dragover.prevent @dragenter.prevent="handleDragEnter" @dragleave.prevent="handleDragLeave">
+
+      <div class="pointer-events-none">
+        <div
+          class="mb-3 text-surface-400 dark:text-surface-500 group-hover:text-primary-500 dark:group-hover:text-primary-400 transition-colors duration-300">
+          <i class="pi pi-cloud-upload text-3xl"></i>
+        </div>
+        <p class="text-surface-700 dark:text-surface-200 font-medium mb-1">
+          Click or drag file here
         </p>
-        <input type="file" @change="handleFileSelect" accept="audio/*" class="hidden" ref="fileInput" />
-        <Button label="Choose File" icon="pi pi-upload" @click="$refs.fileInput.click()" class="mb-4" />
-        <p class="text-sm text-surface-500">
-          Supported formats: MP3, WAV, FLAC, AAC (Max 50MB)
+        <p class="text-xs text-surface-500 dark:text-surface-400 mb-4">
+          MP3, WAV, FLAC, AAC (Max 50MB)
         </p>
       </div>
 
-      <ProgressBar v-if="isProcessing" :value="processingProgress" class="mt-4" />
+      <input type="file" @change="handleFileSelect" accept="audio/*" class="hidden" ref="fileInput" />
 
-      <div v-if="uploadedFiles.length > 0" class="mt-6">
-        <h4 class="text-lg font-medium mb-3">Uploaded Files</h4>
-        <div class="space-y-2">
-          <div v-for="file in uploadedFiles" :key="file.id"
-            class="flex items-center justify-between p-3 bg-surface-50 rounded-lg">
-            <div class="flex items-center space-x-3">
-              <i class="pi pi-file-audio text-primary-500"></i>
-              <div>
-                <p class="font-medium">{{ file.name }}</p>
-                <p class="text-sm text-surface-500">
-                  {{ Math.round(file.duration) }}s •
-                  {{ (file.size / 1024 / 1024).toFixed(1) }}MB
-                </p>
-              </div>
+      <Button label="Select File" size="small" outlined @click="$refs.fileInput.click()" />
+    </div>
+
+    <ProgressBar v-if="isProcessing" :value="processingProgress" class="mt-4 h-2" />
+
+    <div v-if="uploadedFiles.length > 0" class="mt-6">
+      <div class="text-xs font-semibold text-surface-500 dark:text-surface-400 uppercase tracking-wider mb-3 px-1">
+        Uploaded Files</div>
+      <div class="space-y-2">
+        <div v-for="file in uploadedFiles" :key="file.id"
+          class="flex items-center justify-between p-3 rounded-lg border border-surface-200 dark:border-surface-700 hover:bg-surface-50 dark:hover:bg-surface-800 transition-colors">
+          <div class="flex items-center space-x-3 overflow-hidden">
+            <div
+              class="w-8 h-8 rounded-full bg-primary-100 dark:bg-primary-900/30 flex items-center justify-center flex-shrink-0">
+              <i class="pi pi-music text-primary-600 dark:text-primary-400 text-sm"></i>
             </div>
-            <Button icon="pi pi-trash" severity="danger" text @click="deleteFile(file.id)" />
+            <div class="min-w-0">
+              <p class="font-medium text-sm truncate">{{ file.name }}</p>
+              <p class="text-xs text-surface-500 dark:text-surface-400">
+                {{ Math.round(file.duration) }}s •
+                {{ (file.size / 1024 / 1024).toFixed(1) }}MB
+              </p>
+            </div>
           </div>
+          <Button icon="pi pi-trash" severity="danger" text rounded size="small" @click="deleteFile(file.id)" />
         </div>
       </div>
-    </template>
-  </Card>
+    </div>
+  </div>
 </template>
