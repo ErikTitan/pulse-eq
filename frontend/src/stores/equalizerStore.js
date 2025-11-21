@@ -42,6 +42,11 @@ export const useEqualizerStore = defineStore('equalizer', {
     weq8: null,
     nyquist: 20000,
     audioBuffer: null,
+    isPlaying: false,
+    duration: 0,
+    currentTime: 0,
+    playbackStartTime: 0,
+    playbackOffset: 0,
   }),
 
   getters: {
@@ -127,10 +132,19 @@ export const useEqualizerStore = defineStore('equalizer', {
       console.log('[equalizerStore] initializeAudio called with audioBuffer:', audioBuffer)
       this.audioContext = audioContext
       this.audioBuffer = audioBuffer
+      this.currentTime = 0
+      this.playbackOffset = 0
+      this.isPlaying = false
 
       // Clean up previous sources
       if (this.source) {
+        try {
+          this.source.stop()
+        } catch (e) {
+          // ignore
+        }
         this.source.disconnect()
+        this.source = null
       }
       if (this.audio) {
         this.audio.pause()
@@ -161,8 +175,19 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.audio = new Audio(audioPath)
         this.source = this.audioContext.createMediaElementSource(this.audio)
         this.source.connect(this.weq8.input)
+        this.audio.addEventListener('loadedmetadata', () => {
+          this.duration = this.audio.duration
+        })
+        this.audio.addEventListener('ended', () => {
+          this.isPlaying = false
+          this.currentTime = 0
+          this.playbackOffset = 0
+        })
       } else {
         this.source = null // Ensure source is null for buffer-based playback initially
+        if (audioBuffer) {
+          this.duration = audioBuffer.duration
+        }
       }
 
       // Try to load saved state
@@ -227,6 +252,8 @@ export const useEqualizerStore = defineStore('equalizer', {
         await this.audioContext.resume()
       }
 
+      this.isPlaying = true
+
       if (this.audio) {
         console.log('[equalizerStore] Playing from audio element.')
         await this.audio.play()
@@ -242,8 +269,13 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.source = this.audioContext.createBufferSource()
         this.source.buffer = this.audioBuffer
         this.source.connect(this.weq8.input)
-        this.source.start(0)
-        console.log('[equalizerStore] Audio buffer playback started.')
+
+        this.playbackStartTime = this.audioContext.currentTime
+        this.source.start(0, this.playbackOffset)
+        console.log(
+          '[equalizerStore] Audio buffer playback started at offset:',
+          this.playbackOffset,
+        )
       } else {
         console.warn(
           '[equalizerStore] playAudio called but no audio source or buffer is available.',
@@ -252,13 +284,69 @@ export const useEqualizerStore = defineStore('equalizer', {
     },
 
     pauseAudio() {
+      this.isPlaying = false
       if (this.audio) {
         this.audio.pause()
       } else if (this.source) {
         try {
           this.source.stop()
+          // Update offset so we resume from here
+          this.playbackOffset += this.audioContext.currentTime - this.playbackStartTime
         } catch (e) {
           console.warn('Could not stop audio source, it may have already been stopped.', e)
+        }
+      }
+    },
+
+    seek(time) {
+      const wasPlaying = this.isPlaying
+
+      // Clamp time
+      time = Math.max(0, Math.min(time, this.duration))
+
+      this.currentTime = time
+      this.playbackOffset = time
+
+      if (this.audio) {
+        this.audio.currentTime = time
+      } else if (this.audioBuffer) {
+        if (wasPlaying) {
+          if (this.source) {
+            try {
+              this.source.stop()
+            } catch (e) {}
+            this.source.disconnect()
+          }
+          this.source = this.audioContext.createBufferSource()
+          this.source.buffer = this.audioBuffer
+          this.source.connect(this.weq8.input)
+          this.playbackStartTime = this.audioContext.currentTime
+          this.source.start(0, this.playbackOffset)
+        }
+      }
+    },
+
+    updateTime() {
+      if (!this.isPlaying) return
+
+      if (this.audio) {
+        this.currentTime = this.audio.currentTime
+        if (this.audio.ended) {
+          this.isPlaying = false
+          this.currentTime = 0
+          this.playbackOffset = 0
+        }
+      } else if (this.audioBuffer) {
+        const elapsed = this.audioContext.currentTime - this.playbackStartTime
+        this.currentTime = this.playbackOffset + elapsed
+
+        if (this.currentTime >= this.duration) {
+          this.isPlaying = false
+          this.currentTime = 0
+          this.playbackOffset = 0
+          try {
+            this.source.stop()
+          } catch (e) {}
         }
       }
     },

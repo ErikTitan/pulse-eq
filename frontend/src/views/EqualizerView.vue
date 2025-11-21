@@ -3,6 +3,7 @@ import Card from 'primevue/card';
 import Button from 'primevue/button';
 import Select from 'primevue/select';
 import Message from 'primevue/message';
+import Slider from 'primevue/slider';
 
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { useAuthStore } from '@/stores/authStore';
@@ -30,7 +31,8 @@ export default {
     BandControls,
     EqControls,
     FrequencyRegions,
-    AudioUploadManager
+    AudioUploadManager,
+    Slider
   },
   data() {
     const equalizerStore = useEqualizerStore();
@@ -58,9 +60,42 @@ export default {
       showFrequencyRegions: false,
       highlightedRange: null,
       isBrowserSupported: true,
+      seekValue: 0,
+      isSeeking: false,
+    }
+  },
+  computed: {
+    formattedCurrentTime() {
+      return this.formatTime(this.equalizerStore.currentTime);
+    },
+    formattedDuration() {
+      return this.formatTime(this.equalizerStore.duration);
     }
   },
   methods: {
+    formatTime(seconds) {
+      if (!seconds || isNaN(seconds)) return '0:00';
+      const m = Math.floor(seconds / 60);
+      const s = Math.floor(seconds % 60);
+      return `${m}:${s.toString().padStart(2, '0')}`;
+    },
+    onSeek(value) {
+      this.isSeeking = true;
+      this.seekValue = value;
+    },
+    onSeekEnd(value) {
+      this.isSeeking = false;
+      this.equalizerStore.seek(value);
+    },
+    updateProgress() {
+      if (this.equalizerStore.isPlaying) {
+        this.equalizerStore.updateTime();
+        if (!this.isSeeking) {
+          this.seekValue = this.equalizerStore.currentTime;
+        }
+        requestAnimationFrame(this.updateProgress);
+      }
+    },
     addFilter() {
       this.equalizerStore.addFilter();
     },
@@ -190,6 +225,20 @@ export default {
       handler(isOriginal) {
         this.equalizerStore.setGlobalBypass(isOriginal);
       }
+    },
+    'equalizerStore.isPlaying': {
+      handler(isPlaying) {
+        if (isPlaying) {
+          this.updateProgress();
+        }
+      }
+    },
+    'equalizerStore.currentTime': {
+      handler(time) {
+        if (!this.isSeeking && !this.equalizerStore.isPlaying) {
+          this.seekValue = time;
+        }
+      }
     }
   },
 
@@ -252,6 +301,14 @@ export default {
                     :nyquist="nyquist" @update:filters="equalizerStore.filters = $event" @pointerdown="startDragging"
                     @pointermove="handleDrag" @pointerup="stopDragging" @pointercancel="stopDragging"
                     @wheel="handleFilterScroll" />
+                </div>
+                <div class="w-full px-4 mb-4">
+                  <div class="flex justify-between text-xs text-surface-500 mb-2">
+                    <span>{{ formattedCurrentTime }}</span>
+                    <span>{{ formattedDuration }}</span>
+                  </div>
+                  <Slider v-model="seekValue" :min="0" :max="equalizerStore.duration" :step="0.1" @slideend="onSeekEnd"
+                    @change="onSeekEnd" class="w-full" />
                 </div>
                 <div class="flex gap-4 items-center">
                   <Button icon="pi pi-play" severity="success" @click="playAudio" />
