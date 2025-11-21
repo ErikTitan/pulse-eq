@@ -181,21 +181,6 @@ export default {
           return;
         }
 
-        // Basic profanity check (you can enhance this with a proper profanity filter)
-        const profanityWords = ['fuck', 'shit', 'damn', 'bitch', 'ass', 'hell']; // Add more as needed
-        for (const tag of this.savePresetForm.tags) {
-          const tagLower = tag.toLowerCase();
-          if (profanityWords.some(word => tagLower.includes(word))) {
-            this.$toast.add({
-              severity: 'error',
-              summary: 'Inappropriate Content',
-              detail: `Tag "${tag}" contains inappropriate content`,
-              life: 3000
-            });
-            return;
-          }
-        }
-
         const settings = this.filters.map(filter => ({
           type: filter.type,
           frequency: filter.frequency,
@@ -455,12 +440,12 @@ export default {
 
       <!-- Audio Upload Dialog -->
       <Dialog v-model:visible="showUploadDialog" header="Upload Audio File" modal :style="{ width: '450px' }"
-        :draggable="false">
+        :draggable="false" dismissableMask>
         <AudioUploadManager />
       </Dialog>
 
       <!-- Save Preset Dialog -->
-      <Dialog v-model:visible="showSaveDialog" header="Save Preset" modal style="width: 50vw">
+      <Dialog v-model:visible="showSaveDialog" header="Save Preset" modal style="width: 50vw" dismissableMask>
         <div class="flex flex-col gap-4">
           <div class="flex flex-col gap-2">
             <label for="preset-name">Name</label>
@@ -497,7 +482,8 @@ export default {
       </Dialog>
 
       <!-- Export Dialog -->
-      <Dialog v-model:visible="showExportDialog" header="Export Filter Settings" modal style="width: 50vw">
+      <Dialog v-model:visible="showExportDialog" header="Export Filter Settings" modal style="width: 50vw"
+        dismissableMask>
         <div class="flex flex-col gap-4">
           <div class="text-sm">Your filter settings:</div>
           <Textarea v-model="exportedSettings" size="small" autoResize readonly />
@@ -509,7 +495,8 @@ export default {
       </Dialog>
 
       <!-- Import Dialog -->
-      <Dialog v-model:visible="showImportDialog" header="Import Preset" modal style="width: 60vw" @hide="cancelImport">
+      <Dialog v-model:visible="showImportDialog" header="Import Preset" modal style="width: 60vw" dismissableMask
+        @hide="cancelImport">
         <div class="flex flex-col gap-6">
           <div class="text-sm text-gray-600 mb-2">
             Import a PULSE-EQ preset file or paste settings directly:

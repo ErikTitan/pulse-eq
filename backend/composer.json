@@ -7,7 +7,7 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
-        "blaspsoft/blasp": "^2.1",
+        "blaspsoft/blasp": "^3.0",
         "laravel/framework": "^12.1.1",
         "laravel/sanctum": "^4.0",
         "laravel/socialite": "^5.21",

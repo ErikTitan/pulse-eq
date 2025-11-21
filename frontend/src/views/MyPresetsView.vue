@@ -20,7 +20,7 @@
 
     <!-- Create/Edit Dialog -->
     <Dialog v-model:visible="showPresetDialog" :header="editingPreset ? 'Edit Preset' : 'Create Preset'" :modal="true"
-      class="w-full max-w-md">
+      class="w-full max-w-md" dismissableMask>
       <form @submit.prevent="savePreset" class="space-y-4">
         <div>
           <label for="name" class="block text-sm font-medium text-gray-300">Name</label>
@@ -63,7 +63,8 @@
     </Dialog>
 
     <!-- Delete Confirmation Dialog -->
-    <Dialog v-model:visible="showDeleteDialog" header="Confirm Deletion" :modal="true" class="w-full max-w-sm">
+    <Dialog v-model:visible="showDeleteDialog" header="Confirm Deletion" :modal="true" class="w-full max-w-sm"
+      dismissableMask>
       <div class="text-center">
         <p class="mb-4">Are you sure you want to delete this preset?</p>
         <div class="flex justify-center gap-2">
@@ -74,7 +75,8 @@
     </Dialog>
 
     <!-- Profile Dialog -->
-    <Dialog v-model:visible="showProfileDialog" header="Edit Profile" :modal="true" class="w-full max-w-md">
+    <Dialog v-model:visible="showProfileDialog" header="Edit Profile" :modal="true" class="w-full max-w-md"
+      dismissableMask>
       <form @submit.prevent="updateProfile" class="space-y-4">
         <div class="flex justify-center">
           <UserAvatar :user="authStore.user" :label="authStore.avatarLabel" :variant="authStore.avatarVariant"
