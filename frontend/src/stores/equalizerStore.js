@@ -12,6 +12,7 @@ import { WEQ8Runtime } from 'weq8'
 export const useEqualizerStore = defineStore('equalizer', {
   state: () => ({
     savedState: null,
+    _saveTimeout: null,
     filters: [],
     defaultFilters: [
       { type: 'lowshelf12', frequency: 60, gain: 0, Q: 1, bypass: false },
@@ -488,6 +489,8 @@ export const useEqualizerStore = defineStore('equalizer', {
           weq8.toggleBypass(index, value)
           break
       }
+
+      this.updateState()
     },
 
     createSpacedFilters(defaultFilters) {
@@ -512,7 +515,14 @@ export const useEqualizerStore = defineStore('equalizer', {
       }
 
       this.savedState = completeState
-      this.saveToLocalStorage()
+
+      // Debounce the save operation to avoid rapid repetitive saves when sliding
+      if (this._saveTimeout) {
+        clearTimeout(this._saveTimeout)
+      }
+      this._saveTimeout = setTimeout(() => {
+        this.saveToLocalStorage()
+      }, 300)
     },
 
     saveToLocalStorage() {

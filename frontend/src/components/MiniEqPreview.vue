@@ -1,186 +1,250 @@
 <template>
   <div class="mini-eq-preview">
     <!-- Mini EQ Visualization -->
-    <div class="eq-visualization rounded-lg p-4 mb-4">
-      <canvas ref="eqCanvas" width="300" height="120" class="w-full h-auto"></canvas>
-    </div>
-
-    <!-- Frequency Response Info -->
-    <div class="frequency-info mb-4">
-      <div class="flex flex-wrap gap-2">
-        <div v-for="band in frequencyBands" :key="band.frequency" class="text-xs frequency-band px-2 py-1 rounded">
-          {{ formatFrequency(band.frequency) }}: {{ formatGain(band.gain) }}
-        </div>
+    <div
+      class="eq-visualization rounded-xl p-4 mb-6 relative border border-surface overflow-hidden"
+      style="height: 200px"
+      @mousemove="handleInteraction"
+      @mouseleave="resetInteraction"
+    >
+      <div class="w-full h-full relative z-10">
+        <div class="preset-modal-glow" :style="glowStyle"></div>
+        <Chart
+          v-if="chartReady"
+          type="line"
+          :data="chartData"
+          :options="chartOptions"
+          class="w-full h-full relative z-20"
+        />
       </div>
-    </div>
-
-    <!-- Action Buttons -->
-    <div class="action-buttons flex space-x-2">
-      <Button @click="$emit('apply', preset)" label="Apply Preset" severity="success" class="flex-1" />
-      <Button @click="$emit('download', preset)" label="Download" severity="info" class="flex-1" />
     </div>
   </div>
 </template>
 
 <script>
-import Button from 'primevue/button'
+import Chart from 'primevue/chart'
+import { mapStores } from 'pinia'
+import { useThemeStore } from '@/stores/themeStore'
 
 export default {
   name: 'MiniEqPreview',
   components: {
-    Button
+    Chart,
   },
   props: {
     preset: {
       type: Object,
-      required: true
+      required: true,
+    },
+  },
+  data() {
+    return {
+      chartReady: false,
+      glowStyle: {},
     }
   },
-  emits: ['apply', 'download'],
   computed: {
+    ...mapStores(useThemeStore),
     frequencyBands() {
       try {
-        const settings = typeof this.preset.settings === 'string'
-          ? JSON.parse(this.preset.settings)
-          : this.preset.settings;
-        return Array.isArray(settings) ? settings : [];
+        const settings =
+          typeof this.preset.settings === 'string'
+            ? JSON.parse(this.preset.settings)
+            : this.preset.settings
+        return Array.isArray(settings) ? settings : []
       } catch (e) {
-        console.error('Error parsing preset settings:', e);
-        return [];
+        console.error('Error parsing preset settings:', e)
+        return []
       }
-    }
-  },
-  watch: {
-    preset: {
-      handler() {
-        this.drawEqCurve();
-      },
-      deep: true
-    }
+    },
+    chartOptions() {
+      const isDark = this.themeStore.isDarkMode
+      const tooltipBg = isDark ? 'rgba(0, 0, 0, 0.8)' : 'rgba(255, 255, 255, 0.9)'
+      const tooltipTitleColor = isDark ? '#ffffff' : '#374151'
+      const tooltipBodyColor = isDark ? '#ffffff' : '#4b5563'
+      const tooltipBorderColor = isDark ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.2)'
+      const gridColor = isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.05)'
+      const textColor = isDark ? 'rgba(255, 255, 255, 0.4)' : 'rgba(0, 0, 0, 0.4)'
+
+      return {
+        maintainAspectRatio: false,
+        responsive: true,
+        interaction: {
+          mode: 'index',
+          intersect: false,
+        },
+        plugins: {
+          legend: {
+            display: false,
+          },
+          tooltip: {
+            enabled: true,
+            displayColors: false,
+            backgroundColor: tooltipBg,
+            titleColor: tooltipTitleColor,
+            bodyColor: tooltipBodyColor,
+            borderColor: tooltipBorderColor,
+            borderWidth: 1,
+            callbacks: {
+              title: (context) => {
+                return `Frequency: ${context[0].label}`
+              },
+              label: (context) => {
+                const gain = context.parsed.y.toFixed(1)
+                return `Gain: ${gain >= 0 ? '+' : ''}${gain} dB`
+              },
+            },
+          },
+        },
+        scales: {
+          y: {
+            display: true,
+            min: -18,
+            max: 18,
+            grid: {
+              color: gridColor,
+              drawBorder: false,
+            },
+            ticks: {
+              color: textColor,
+              callback: (value) => `${value}dB`,
+              maxTicksLimit: 5,
+              font: {
+                size: 10,
+              },
+            },
+          },
+          x: {
+            display: true,
+            grid: {
+              color: gridColor,
+              drawBorder: false,
+            },
+            ticks: {
+              color: textColor,
+              maxTicksLimit: 6,
+              font: {
+                size: 10,
+              },
+            },
+          },
+        },
+        elements: {
+          line: {},
+        },
+      }
+    },
+    chartData() {
+      const { hex: chartColor, r, g, b } = this.parseHexColor(this.preset.color)
+
+      const labels = this.frequencyBands.map((band) => this.formatFrequency(band.frequency))
+      const data = this.frequencyBands.map((band) => band.gain || 0)
+
+      return {
+        labels,
+        datasets: [
+          {
+            label: 'Gain (dB)',
+            data,
+            borderColor: chartColor,
+            fill: true,
+            tension: 0.4,
+            backgroundColor: (context) => {
+              const chart = context.chart
+              const { ctx, chartArea } = chart
+              if (!chartArea) {
+                return null
+              }
+              const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom)
+              gradient.addColorStop(0, `rgba(${r}, ${g}, ${b}, 0.3)`)
+              gradient.addColorStop(1, `rgba(${r}, ${g}, ${b}, 0)`)
+              return gradient
+            },
+          },
+        ],
+      }
+    },
   },
   mounted() {
-    this.drawEqCurve();
+    // Small delay to ensure all reactive dependencies have settled
+    setTimeout(() => {
+      this.chartReady = true
+    }, 16)
   },
   methods: {
+    handleInteraction(e) {
+      // Handle Glow
+      const el = e.currentTarget
+      const { left, top } = el.getBoundingClientRect()
+      
+      const x = e.clientX - left
+      const y = e.clientY - top
+      
+      const { r, g, b } = this.parseHexColor(this.preset.color)
+      this.glowStyle = {
+        '--glow-x': `${x}px`,
+        '--glow-y': `${y}px`,
+        '--glow-color-rgb': `${r}, ${g}, ${b}`,
+        opacity: 1,
+      }
+    },
+    resetInteraction() {
+      this.glowStyle = {
+        opacity: 0,
+      }
+    },
     formatFrequency(freq) {
       if (freq >= 1000) {
-        return `${Math.round(freq / 1000)}kHz`;
+        return `${Math.round(freq / 1000)}kHz`
       }
-      return `${Math.round(freq)}Hz`;
+      return `${Math.round(freq)}Hz`
     },
-    formatGain(gain) {
-      const gainDb = gain || 0;
-      return gainDb >= 0 ? `+${gainDb.toFixed(1)}dB` : `${gainDb.toFixed(1)}dB`;
-    },
-    drawEqCurve() {
-      const canvas = this.$refs.eqCanvas;
-      if (!canvas) return;
-
-      const ctx = canvas.getContext('2d');
-      const width = canvas.width;
-      const height = canvas.height;
-
-      // Clear canvas
-      ctx.clearRect(0, 0, width, height);
-
-      // Normalize color to ensure valid hex format
-      let color = this.preset.color || '#4ade80';
+    parseHexColor(hex) {
+      let color = hex || '#4ade80'
       if (!color.startsWith('#')) {
-        color = `#${color}`;
+        color = `#${color}`
       }
-      // Validate hex color format and fallback if invalid
       if (!/^#[0-9A-F]{6}$/i.test(color)) {
-        color = '#4ade80';
+        color = '#4ade80'
       }
-
-      // Set up the drawing style
-      ctx.strokeStyle = color;
-      ctx.lineWidth = 2;
-      ctx.fillStyle = `${color}20`;
-
-      // Draw grid - use theme-aware color
-      const gridColor = getComputedStyle(document.documentElement).getPropertyValue('--p-surface-400').trim() || '#6b7280';
-      ctx.strokeStyle = gridColor;
-      ctx.lineWidth = 1;
-
-      // Horizontal grid lines (gain levels)
-      for (let i = 0; i <= 4; i++) {
-        const y = (height / 4) * i;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
+      const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(color)
+      return {
+        r: parseInt(result[1], 16),
+        g: parseInt(result[2], 16),
+        b: parseInt(result[3], 16),
+        hex: color,
       }
-
-      // Vertical grid lines (frequency divisions)
-      for (let i = 0; i <= 6; i++) {
-        const x = (width / 6) * i;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, height);
-        ctx.stroke();
-      }
-
-      // Draw EQ curve
-      if (this.frequencyBands.length > 0) {
-        ctx.strokeStyle = color;
-        ctx.lineWidth = 3;
-
-        ctx.beginPath();
-
-        this.frequencyBands.forEach((band, index) => {
-          const x = (width / (this.frequencyBands.length - 1)) * index;
-          const gain = band.gain || 0;
-          // Map gain from -12dB to +12dB to canvas height
-          const y = height - ((gain + 12) / 24) * height;
-
-          if (index === 0) {
-            ctx.moveTo(x, y);
-          } else {
-            ctx.lineTo(x, y);
-          }
-        });
-
-        ctx.stroke();
-
-        // Fill area under curve
-        ctx.lineTo(width, height);
-        ctx.lineTo(0, height);
-        ctx.closePath();
-        ctx.fillStyle = `${color}20`;
-        ctx.fill();
-      }
-    }
-  }
+    },
+  },
 }
 </script>
 
 <style scoped>
 .mini-eq-preview {
   background: transparent;
-  @apply rounded-lg p-6 max-w-md mx-auto;
+  @apply w-full mx-auto;
 }
 
 .eq-visualization {
-  background: var(--p-surface-ground);
+  background: transparent;
 }
 
-.eq-visualization canvas {
-  background: var(--p-surface-0);
-  @apply rounded;
-}
-
-.frequency-band {
-  background: var(--p-surface-ground);
-  border: 1px solid var(--p-surface-border);
-  color: var(--p-text-color);
-}
-
-.line-clamp-2 {
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
+.preset-modal-glow {
+  --glow-size: 350px;
+  position: absolute;
+  top: var(--glow-y);
+  left: var(--glow-x);
+  width: var(--glow-size);
+  height: var(--glow-size);
+  background-image: radial-gradient(
+    circle at center,
+    rgba(var(--glow-color-rgb), 0.2) 0%,
+    rgba(var(--glow-color-rgb), 0) 70%
+  );
+  transform: translate(-50%, -50%);
+  opacity: 0;
+  transition: opacity 0.3s ease-in-out;
+  pointer-events: none;
+  z-index: 0;
 }
 </style>

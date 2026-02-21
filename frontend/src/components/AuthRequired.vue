@@ -10,20 +10,29 @@
             </div>
 
             <!-- Title -->
-            <h2 class="text-2xl font-bold text-surface-500 mb-4">
-              Authentication Required
-            </h2>
+            <h2 class="text-2xl font-bold text-surface-500 mb-4">Authentication Required</h2>
 
             <!-- Description -->
             <p class="text-surface-600 mb-8 leading-relaxed">
-              This feature requires you to be signed in. Please log in to your account or create a new one to continue.
+              This feature requires you to be signed in. Please log in to your account or create a
+              new one to continue.
             </p>
 
             <!-- Action Buttons -->
             <div class="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button label="Sign In" icon="pi pi-sign-in" @click="$emit('showLogin')" class="px-6 py-3" />
-              <Button label="Create Account" icon="pi pi-user-plus" variant="outlined" @click="$emit('showRegister')"
-                class="px-6 py-3" />
+              <Button
+                label="Sign In"
+                icon="pi pi-sign-in"
+                @click="$emit('showLogin')"
+                class="px-6 py-3"
+              />
+              <Button
+                label="Create Account"
+                icon="pi pi-user-plus"
+                variant="outlined"
+                @click="$emit('showRegister')"
+                class="px-6 py-3"
+              />
             </div>
 
             <!-- Additional Help -->
@@ -48,9 +57,9 @@ export default {
   name: 'AuthRequired',
   components: {
     Card,
-    Button
+    Button,
   },
-  emits: ['showLogin', 'showRegister']
+  emits: ['showLogin', 'showRegister'],
 }
 </script>
 
@@ -61,7 +70,6 @@ export default {
 }
 
 @keyframes pulse {
-
   0%,
   100% {
     opacity: 0.8;

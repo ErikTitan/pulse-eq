@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia'
+import { markRaw } from 'vue'
 import AudioFileProcessor, {
   AudioFileError,
   AudioFileErrorTypes,
@@ -86,9 +87,12 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         const now = Date.now()
         const twentyFourHours = 24 * 60 * 60 * 1000
 
+        // Clear existing files before pushing new ones to prevent duplication on HMR
+        this.uploadedFiles = []
+
         for (const file of files) {
           const uploadedAtTime = new Date(file.uploadedAt).getTime()
-          
+
           if (now - uploadedAtTime > twentyFourHours) {
             // Delete expired file from DB
             await deleteAudioFile(file.id)
@@ -97,32 +101,33 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
           // Restore file
           const objectUrl = URL.createObjectURL(file.blob)
-          
-          // Decode the audioBuffer so it can be played back
-          this.initializeAudioContext()
-          let restoredBuffer = null
-          try {
-             const arrayBuffer = await file.blob.arrayBuffer()
-             restoredBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
-          } catch (e) {
-             console.error('[audioUploadStore] Failed to decode restored audio blob:', e)
-          }
 
           this.uploadedFiles.push({
             ...file,
             objectUrl,
-            audioBuffer: restoredBuffer, // Store decoded buffer for playback
+            audioBuffer: null, // Rely on standard <audio> tag playback for restored files to avoid browser decode blocks
             isDefault: false,
           })
         }
 
+        // Keep track of what we loaded with
+        const initialSelection = this.selectedAudioSource
+
         // Validate selectedAudioSource
-        if (this.selectedAudioSource !== 'default' && !this.getFileById(this.selectedAudioSource)) {
+        if (initialSelection !== 'default' && !this.getFileById(initialSelection)) {
           this.selectedAudioSource = 'default'
         }
 
-        // Set current audio file
-        this.setSelectedAudioSource(this.selectedAudioSource)
+        // Trigger EqualizerView watcher by temporarily clearing selection
+        if (this.selectedAudioSource !== 'default') {
+          this.setSelectedAudioSource('default')
+          // Yield to Vue reactivity system briefly
+          setTimeout(() => {
+            this.setSelectedAudioSource(initialSelection)
+          }, 10)
+        } else {
+          this.setSelectedAudioSource('default')
+        }
 
         console.log(`[audioUploadStore] Restored ${this.uploadedFiles.length} files from DB.`)
       } catch (error) {
@@ -132,10 +137,10 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
     // Initialize audio context
     initializeAudioContext() {
-      if (!this.audioContext) {
+      if (!this.audioContext || typeof this.audioContext.decodeAudioData !== 'function') {
         const AudioContextClass = window.AudioContext || window.webkitAudioContext
         if (AudioContextClass) {
-          this.audioContext = new AudioContextClass()
+          this.audioContext = markRaw(new AudioContextClass())
         }
       }
       return this.audioContext
@@ -173,7 +178,7 @@ export const useAudioUploadStore = defineStore('audioUpload', {
           numberOfChannels: processedFile.numberOfChannels,
           uploadedAt: processedFile.uploadedAt,
           blob: processedFile.blob,
-          isDefault: processedFile.isDefault
+          isDefault: processedFile.isDefault,
         }
         await saveAudioFile(fileToSave)
 
@@ -186,8 +191,8 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
         // Find the file in the state and attach the buffer
         const fileInState = this.uploadedFiles.find((f) => f.id === processedFile.id)
-        if (fileInState) {
-          fileInState.audioBuffer = processedFile.audioBuffer
+        if (fileInState && processedFile.audioBuffer) {
+          fileInState.audioBuffer = markRaw(processedFile.audioBuffer)
           console.log(
             '[audioUploadStore] AudioBuffer attached to file in state:',
             fileInState.audioBuffer,

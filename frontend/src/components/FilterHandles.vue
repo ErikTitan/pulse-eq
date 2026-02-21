@@ -1,31 +1,31 @@
 <script>
-import { useEqualizerStore } from '@/stores/equalizerStore';
-import { useThemeStore } from '@/stores/themeStore';
-import ContextMenu from 'primevue/contextmenu';
+import { useEqualizerStore } from '@/stores/equalizerStore'
+import { useThemeStore } from '@/stores/themeStore'
+import ContextMenu from 'primevue/contextmenu'
 
 export default {
   name: 'FilterHandles',
   components: {
-    ContextMenu
+    ContextMenu,
   },
   props: {
     filters: {
       type: Array,
-      required: true
+      required: true,
     },
     selectedPoint: {
       type: Number,
-      default: null
+      default: null,
     },
     nyquist: {
       type: Number,
-      required: true
-    }
+      required: true,
+    },
   },
   emits: ['pointerdown', 'pointermove', 'pointerup', 'pointercancel', 'wheel', 'update:filters'],
   data() {
-    const equalizerStore = useEqualizerStore();
-    const themeStore = useThemeStore();
+    const equalizerStore = useEqualizerStore()
+    const themeStore = useThemeStore()
     return {
       equalizerStore,
       themeStore,
@@ -37,89 +37,96 @@ export default {
           icon: 'pi pi-refresh',
           command: () => {
             if (this.contextMenuIndex !== null) {
-              this.equalizerStore.resetFilter(this.contextMenuIndex);
+              this.equalizerStore.resetFilter(this.contextMenuIndex)
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     }
   },
   watch: {
     'themeStore.isDarkMode': {
       handler() {
-        this.$forceUpdate();
-      }
-    }
+        this.$forceUpdate()
+      },
+    },
   },
   methods: {
     getFilterPosition(filter) {
-      if (!this.canvas) return { transform: 'translate(0px, 0px)' };
+      if (!this.canvas) return { transform: 'translate(0px, 0px)' }
 
-      const rect = this.canvas.getBoundingClientRect();
-      const displayWidth = rect.width;
-      const displayHeight = rect.height;
+      const rect = this.canvas.getBoundingClientRect()
+      const displayWidth = rect.width
+      const displayHeight = rect.height
 
       // Convert frequency to x position (logarithmic scale)
-      const minF = Math.log10(20);
-      const maxF = Math.log10(this.nyquist);
-      const logPos = (Math.log10(filter.frequency) - minF) / (maxF - minF);
-      const x = logPos * displayWidth;
+      const minF = Math.log10(20)
+      const maxF = Math.log10(this.nyquist)
+      const logPos = (Math.log10(filter.frequency) - minF) / (maxF - minF)
+      const x = logPos * displayWidth
 
       // Convert gain to y position (linear scale)
-      const y = displayHeight - ((filter.gain + 18) / 36) * displayHeight;
+      const y = displayHeight - ((filter.gain + 18) / 36) * displayHeight
 
       return {
-        transform: `translate(${x}px, ${y}px)`
-      };
+        transform: `translate(${x}px, ${y}px)`,
+      }
     },
 
-
     getFilterLabel(filter) {
-      return `${this.formatFrequency(filter.frequency)} ${this.formatFrequencyUnit(filter.frequency)}`;
+      return `${this.formatFrequency(filter.frequency)} ${this.formatFrequencyUnit(filter.frequency)}`
     },
 
     formatFrequency(freq, keepHz = false) {
       if (freq >= 1000 && !keepHz) {
-        return (freq / 1000).toFixed(2);
+        return (freq / 1000).toFixed(2)
       }
-      return freq.toFixed(0);
+      return freq.toFixed(0)
     },
 
     formatFrequencyUnit(freq, keepHz = false) {
       if (freq >= 1000 && !keepHz) {
-        return "kHz";
+        return 'kHz'
       }
-      return "Hz";
+      return 'Hz'
     },
     onRightClick(event, index) {
-      this.contextMenuIndex = index;
-      this.$refs.menu.show(event);
-    }
+      this.contextMenuIndex = index
+      this.$refs.menu.show(event)
+    },
   },
   mounted() {
-    this.canvas = this.$el.parentElement;
-  }
+    this.canvas = this.$el.parentElement
+  },
 }
 </script>
 
 <template>
   <div class="filter-handles-container">
     <ContextMenu ref="menu" :model="menuItems" />
-    <div v-for="(filter, index) in filters" :key="index" class="filter-handle absolute z-40 -translate-x-1/2 -translate-y-1/2 w-6 h-6
-      border-2 rounded-full cursor-grab select-none
-      backdrop-blur shadow-lg flex items-center justify-center" :class="{
-        'selected': selectedPoint === index,
-        'bypassed': filter.bypass,
+    <div
+      v-for="(filter, index) in filters"
+      :key="index"
+      class="filter-handle absolute z-40 -translate-x-1/2 -translate-y-1/2 w-6 h-6 border-2 rounded-full cursor-grab select-none backdrop-blur shadow-lg flex items-center justify-center"
+      :class="{
+        selected: selectedPoint === index,
+        bypassed: filter.bypass,
         'has-gain': equalizerStore.filterHasGain(filter.type),
-        'has-q': equalizerStore.filterHasQ(filter.type)
-      }" :style="getFilterPosition(filter)" @pointerdown="$emit('pointerdown', $event, index)"
-      @pointermove="$emit('pointermove', $event)" @pointerup="$emit('pointerup', $event)"
-      @pointercancel="$emit('pointercancel', $event)" @wheel.prevent="$emit('wheel', $event, index)"
-      @contextmenu.prevent="onRightClick($event, index)">
+        'has-q': equalizerStore.filterHasQ(filter.type),
+      }"
+      :style="getFilterPosition(filter)"
+      @pointerdown="$emit('pointerdown', $event, index)"
+      @pointermove="$emit('pointermove', $event)"
+      @pointerup="$emit('pointerup', $event)"
+      @pointercancel="$emit('pointercancel', $event)"
+      @wheel.prevent="$emit('wheel', $event, index)"
+      @contextmenu.prevent="onRightClick($event, index)"
+    >
       <span class="filter-number">{{ index + 1 }}</span>
       <span class="filter-tooltip filter-freq absolute">{{ getFilterLabel(filter) }}</span>
-      <span v-if="equalizerStore.filterHasQ(filter.type)" class="filter-tooltip filter-q">Q: {{
-        filter.Q.toFixed(1) }}</span>
+      <span v-if="equalizerStore.filterHasQ(filter.type)" class="filter-tooltip filter-q"
+        >Q: {{ filter.Q.toFixed(1) }}</span
+      >
     </div>
   </div>
 </template>
@@ -138,7 +145,8 @@ export default {
 .filter-handle.selected {
   background: rgba(255, 204, 0, 0.8);
   transform: scale(1.1);
-  box-shadow: inset 0 2px 4px rgba(255, 255, 255, 0.4),
+  box-shadow:
+    inset 0 2px 4px rgba(255, 255, 255, 0.4),
     0 6px 12px rgba(255, 204, 0, 0.3);
 }
 

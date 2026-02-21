@@ -7,13 +7,13 @@ export const usePresetCategoryStore = defineStore('presetCategory', {
   }),
   actions: {
     async fetchPresetCategories() {
-      console.log('Fetching preset categories...');
+      console.log('Fetching preset categories...')
       try {
-        const response = await axios.get('/api/preset-categories');
-        console.log('Categories response:', response.data);
-        this.categories = response.data;
+        const response = await axios.get('/api/preset-categories')
+        console.log('Categories response:', response.data)
+        this.categories = response.data
       } catch (error) {
-        console.error('Error fetching preset categories:', error);
+        console.error('Error fetching preset categories:', error)
       }
     },
   },

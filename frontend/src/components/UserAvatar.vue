@@ -1,5 +1,5 @@
 <script>
-import Avatar from 'vue-boring-avatars';
+import Avatar from 'vue-boring-avatars'
 
 export default {
   name: 'UserAvatar',
@@ -19,7 +19,8 @@ export default {
     variant: {
       type: String,
       default: 'bauhaus',
-      validator: (value) => ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
+      validator: (value) =>
+        ['bauhaus', 'beam', 'marble', 'pixel', 'ring', 'sunset'].includes(value),
     },
   },
   computed: {
@@ -28,12 +29,12 @@ export default {
         small: 32,
         normal: 40,
         large: 48,
-        xlarge: 64
-      };
-      return sizes[this.size] || sizes.normal;
+        xlarge: 64,
+      }
+      return sizes[this.size] || sizes.normal
     },
     userName() {
-      return this.user?.id?.toString() || '0';
+      return this.user?.id?.toString() || '0'
     },
     colorPalette() {
       return [
@@ -46,11 +47,11 @@ export default {
         '#84CC16', // lime-500
         '#F97316', // orange-500
         '#EC4899', // pink-500
-        '#6366F1'  // indigo-500
-      ];
+        '#6366F1', // indigo-500
+      ]
     },
   },
-};
+}
 </script>
 
 <template>

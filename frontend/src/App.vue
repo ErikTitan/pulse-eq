@@ -1,13 +1,13 @@
 <script>
-import { mapStores } from 'pinia';
-import NavBar from './components/NavBar.vue';
-import FooterComponent from './components/FooterComponent.vue';
-import ScrollTop from 'primevue/scrolltop';
-import Toast from 'primevue/toast';
-import { useThemeStore } from './stores/themeStore';
-import { useAuthStore } from './stores/authStore';
-import { usePresetCategoryStore } from './stores/presetCategoryStore';
-import { useAudioUploadStore } from './stores/audioUploadStore';
+import { mapStores } from 'pinia'
+import NavBar from './components/NavBar.vue'
+import FooterComponent from './components/FooterComponent.vue'
+import ScrollTop from 'primevue/scrolltop'
+import Toast from 'primevue/toast'
+import { useThemeStore } from './stores/themeStore'
+import { useAuthStore } from './stores/authStore'
+import { usePresetCategoryStore } from './stores/presetCategoryStore'
+import { useAudioUploadStore } from './stores/audioUploadStore'
 
 export default {
   components: {
@@ -21,19 +21,19 @@ export default {
   },
   methods: {
     handleShowLogin() {
-      this.$refs.navbar.showLoginDialog();
+      this.$refs.navbar.showLoginDialog()
     },
     handleShowRegister() {
-      this.$refs.navbar.showRegisterDialog();
+      this.$refs.navbar.showRegisterDialog()
     },
   },
   mounted() {
     // Initialize theme on app startup
-    this.themeStore.initializeTheme();
-    this.authStore.validateSessionOnStartup();
-    this.audioUploadStore.initStore();
+    this.themeStore.initializeTheme()
+    this.authStore.validateSessionOnStartup()
+    this.audioUploadStore.initStore()
   },
-};
+}
 </script>
 
 <template>

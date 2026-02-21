@@ -1,48 +1,56 @@
 <script>
-import Button from 'primevue/button';
+import Button from 'primevue/button'
 
 export default {
-  name: "AudioVisualizerHeader",
+  name: 'AudioVisualizerHeader',
   components: {
-    Button
+    Button,
   },
   data() {
     return {
       bars: Array.from({ length: 32 }, (_, i) => ({
         id: i,
-        height: Math.random() * 100
-      }))
+        height: Math.random() * 100,
+      })),
     }
   },
   mounted() {
-    this.startAnimation();
+    this.startAnimation()
   },
   methods: {
     startAnimation() {
       const updateBars = () => {
-        this.bars = this.bars.map(bar => ({
+        this.bars = this.bars.map((bar) => ({
           ...bar,
-          height: 20 + Math.random() * 50
-        }));
-      };
+          height: 20 + Math.random() * 50,
+        }))
+      }
 
       // Slowed down to 150ms for smoother animation
-      setInterval(updateBars, 150);
-    }
-  }
-};
+      setInterval(updateBars, 150)
+    },
+  },
+}
 </script>
 
 <template>
   <div class="audio-visualizer-header">
     <div class="visualizer-container">
       <div class="bars-container">
-        <div v-for="bar in bars" :key="bar.id" class="bar" :style="{ height: `${bar.height}%` }">
-        </div>
+        <div
+          v-for="bar in bars"
+          :key="bar.id"
+          class="bar"
+          :style="{ height: `${bar.height}%` }"
+        ></div>
       </div>
       <div class="bars-container reflection">
-        <div v-for="bar in bars" :key="bar.id" class="bar" :style="{ height: `${bar.height}%` }">
-        </div>
+        <div
+          v-for="bar in bars"
+          :key="bar.id"
+          class="bar"
+          :style="{ height: `${bar.height}%` }"
+        ></div>
       </div>
     </div>
 
@@ -53,11 +61,17 @@ export default {
           Perfect Audio For Every Moment
         </h1>
         <p class="font-normal text-3xl leading-relaxed md:mt-4 text-white drop-shadow-lg">
-          Create, share, and discover custom audio equalizer presets. Transform your gaming experience,
-          optimize your headphones, and enhance your music listening with precision controls.
+          Create, share, and discover custom audio equalizer presets. Transform your gaming
+          experience, optimize your headphones, and enhance your music listening with precision
+          controls.
         </p>
-        <Button as="router-link" label="Create Your First Preset" to="equalizer" severity="primary"
-          class="!text-2xl mt-8 !px-6 rounded-full hover:shadow-md">
+        <Button
+          as="router-link"
+          label="Create Your First Preset"
+          to="equalizer"
+          severity="primary"
+          class="!text-2xl mt-8 !px-6 rounded-full hover:shadow-md"
+        >
         </Button>
       </div>
       <div class="flex justify-center md:justify-end bg-scroll relative drop-shadow-md">
@@ -73,10 +87,12 @@ export default {
   width: 100%;
   min-height: 100vh;
   overflow: hidden;
-  background: linear-gradient(to right,
-      var(--p-purple-400),
-      var(--p-indigo-400) 50%,
-      var(--p-cyan-400));
+  background: linear-gradient(
+    to right,
+    var(--p-purple-400),
+    var(--p-indigo-400) 50%,
+    var(--p-cyan-400)
+  );
   clip-path: ellipse(133% 75% at 93% 13%);
 }
 
@@ -112,11 +128,13 @@ export default {
 .bar {
   width: 1.5%;
   min-height: 20%;
-  background: linear-gradient(to top,
-      rgba(255, 255, 255, 0.9),
-      var(--p-cyan-200) 30%,
-      var(--p-blue-300) 60%,
-      var(--p-purple-300));
+  background: linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.9),
+    var(--p-cyan-200) 30%,
+    var(--p-blue-300) 60%,
+    var(--p-purple-300)
+  );
   border-radius: 4px;
   transition: height 0.15s ease-in-out;
 }
@@ -128,17 +146,21 @@ export default {
 
 /* Dark mode adjustments */
 :root[class='my-app-dark'] .audio-visualizer-header {
-  background: linear-gradient(to right,
-      var(--p-blue-950),
-      var(--p-indigo-950) 50%,
-      var(--p-purple-950));
+  background: linear-gradient(
+    to right,
+    var(--p-blue-950),
+    var(--p-indigo-950) 50%,
+    var(--p-purple-950)
+  );
 }
 
 :root[class='my-app-dark'] .bar {
-  background: linear-gradient(to top,
-      var(--p-cyan-500),
-      var(--p-blue-500) 50%,
-      var(--p-purple-500));
+  background: linear-gradient(
+    to top,
+    var(--p-cyan-500),
+    var(--p-blue-500) 50%,
+    var(--p-purple-500)
+  );
 }
 
 :root[class='my-app-dark'] .visualizer-container {
