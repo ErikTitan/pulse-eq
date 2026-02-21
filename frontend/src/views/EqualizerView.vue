@@ -46,9 +46,6 @@ export default {
         name: 'Equalizer',
         description: '',
       },
-      uploadedFile: null,
-      exportedSettings: '',
-      importedSettings: '',
       analyserNode: null,
       audio: null,
       audioContext: null,
@@ -79,13 +76,17 @@ export default {
       const s = Math.floor(seconds % 60);
       return `${m}:${s.toString().padStart(2, '0')}`;
     },
-    onSeek(value) {
+    onSeek(event) {
       this.isSeeking = true;
-      this.seekValue = value;
+      // Handle PrimeVue event object if present
+      const val = (typeof event === 'number') ? event : (event && event.value !== undefined ? event.value : this.seekValue);
+      this.seekValue = val;
     },
-    onSeekEnd(value) {
+    onSeekEnd(event) {
       this.isSeeking = false;
-      this.equalizerStore.seek(value);
+      // Handle PrimeVue event object if present
+      const val = (typeof event === 'number') ? event : (event && event.value !== undefined ? event.value : this.seekValue);
+      this.equalizerStore.seek(val);
     },
     updateProgress() {
       if (this.equalizerStore.isPlaying) {
@@ -308,7 +309,7 @@ export default {
                     <span>{{ formattedDuration }}</span>
                   </div>
                   <Slider v-model="seekValue" :min="0" :max="equalizerStore.duration" :step="0.1" @slideend="onSeekEnd"
-                    @change="onSeekEnd" class="w-full" />
+                    @slide="onSeek" @change="onSeekEnd" class="w-full" />
                 </div>
                 <div class="flex gap-4 items-center">
                   <Button icon="pi pi-play" severity="success" @click="playAudio" />

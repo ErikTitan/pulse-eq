@@ -120,6 +120,17 @@ export const useEqualizerStore = defineStore('equalizer', {
     resetFilter(index) {
       const filter = this.filters[index]
       if (filter) {
+        const defaultFilter = this.defaultFilters[index]
+
+        if (defaultFilter) {
+          filter.type = defaultFilter.type
+          filter.frequency = defaultFilter.frequency
+        } else {
+          // Fallback for filters beyond the initial set
+          filter.type = 'peaking12'
+          filter.frequency = 1000
+        }
+
         filter.gain = 0
         filter.Q = 1
         filter.bypass = false

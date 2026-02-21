@@ -1,8 +1,13 @@
 <script>
 import { useEqualizerStore } from '@/stores/equalizerStore';
 import { useThemeStore } from '@/stores/themeStore';
+import ContextMenu from 'primevue/contextmenu';
+
 export default {
   name: 'FilterHandles',
+  components: {
+    ContextMenu
+  },
   props: {
     filters: {
       type: Array,
@@ -24,7 +29,19 @@ export default {
     return {
       equalizerStore,
       themeStore,
-      canvas: null
+      canvas: null,
+      contextMenuIndex: null,
+      menuItems: [
+        {
+          label: 'Reset',
+          icon: 'pi pi-refresh',
+          command: () => {
+            if (this.contextMenuIndex !== null) {
+              this.equalizerStore.resetFilter(this.contextMenuIndex);
+            }
+          }
+        }
+      ]
     }
   },
   watch: {
@@ -74,6 +91,10 @@ export default {
       }
       return "Hz";
     },
+    onRightClick(event, index) {
+      this.contextMenuIndex = index;
+      this.$refs.menu.show(event);
+    }
   },
   mounted() {
     this.canvas = this.$el.parentElement;
@@ -83,6 +104,7 @@ export default {
 
 <template>
   <div class="filter-handles-container">
+    <ContextMenu ref="menu" :model="menuItems" />
     <div v-for="(filter, index) in filters" :key="index" class="filter-handle absolute z-40 -translate-x-1/2 -translate-y-1/2 w-6 h-6
       border-2 rounded-full cursor-grab select-none
       backdrop-blur shadow-lg flex items-center justify-center" :class="{
@@ -92,7 +114,8 @@ export default {
         'has-q': equalizerStore.filterHasQ(filter.type)
       }" :style="getFilterPosition(filter)" @pointerdown="$emit('pointerdown', $event, index)"
       @pointermove="$emit('pointermove', $event)" @pointerup="$emit('pointerup', $event)"
-      @pointercancel="$emit('pointercancel', $event)" @wheel.prevent="$emit('wheel', $event, index)">
+      @pointercancel="$emit('pointercancel', $event)" @wheel.prevent="$emit('wheel', $event, index)"
+      @contextmenu.prevent="onRightClick($event, index)">
       <span class="filter-number">{{ index + 1 }}</span>
       <span class="filter-tooltip filter-freq absolute">{{ getFilterLabel(filter) }}</span>
       <span v-if="equalizerStore.filterHasQ(filter.type)" class="filter-tooltip filter-q">Q: {{

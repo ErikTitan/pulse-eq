@@ -33,7 +33,7 @@ export default {
       return sizes[this.size] || sizes.normal;
     },
     userName() {
-      return this.user?.name || 'Anonymous User';
+      return this.user?.id?.toString() || '0';
     },
     colorPalette() {
       return [
@@ -55,7 +55,7 @@ export default {
 
 <template>
   <div class="avatar-wrapper">
-    <Avatar :size="avatarSize" :name="userName" :variant="variant" :colors="colorPalette" :title="true" />
+    <Avatar :size="avatarSize" :name="userName" :variant="variant" :colors="colorPalette" />
   </div>
 </template>
 
