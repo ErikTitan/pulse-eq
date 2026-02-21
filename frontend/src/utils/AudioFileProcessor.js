@@ -290,6 +290,7 @@ export class AudioFileProcessor {
         file: file, // Keep original file reference if needed
         audioBuffer: audioBuffer, // The processed AudioBuffer
         objectUrl: objectUrl,
+        blob: blob, // Store blob for IndexedDB
         metadata: metadata,
         duration: metadata.duration,
         sampleRate: metadata.sampleRate,

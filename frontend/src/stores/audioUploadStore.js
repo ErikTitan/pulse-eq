@@ -4,6 +4,7 @@ import AudioFileProcessor, {
   AudioFileErrorTypes,
 } from '../utils/AudioFileProcessor.js'
 import { useToast } from '@/utils/toast'
+import { saveAudioFile, getAudioFiles, deleteAudioFile, clearAudioFiles } from '@/utils/indexedDB'
 
 export const useAudioUploadStore = defineStore('audioUpload', {
   state: () => ({
@@ -72,7 +73,63 @@ export const useAudioUploadStore = defineStore('audioUpload', {
     },
   },
 
+  persist: {
+    key: 'audio-upload-state',
+    paths: ['selectedAudioSource', 'isOriginalAudio'],
+  },
+
   actions: {
+    // Initialize store from IndexedDB
+    async initStore() {
+      try {
+        const files = await getAudioFiles()
+        const now = Date.now()
+        const twentyFourHours = 24 * 60 * 60 * 1000
+
+        for (const file of files) {
+          const uploadedAtTime = new Date(file.uploadedAt).getTime()
+          
+          if (now - uploadedAtTime > twentyFourHours) {
+            // Delete expired file from DB
+            await deleteAudioFile(file.id)
+            continue
+          }
+
+          // Restore file
+          const objectUrl = URL.createObjectURL(file.blob)
+          
+          // Decode the audioBuffer so it can be played back
+          this.initializeAudioContext()
+          let restoredBuffer = null
+          try {
+             const arrayBuffer = await file.blob.arrayBuffer()
+             restoredBuffer = await this.audioContext.decodeAudioData(arrayBuffer)
+          } catch (e) {
+             console.error('[audioUploadStore] Failed to decode restored audio blob:', e)
+          }
+
+          this.uploadedFiles.push({
+            ...file,
+            objectUrl,
+            audioBuffer: restoredBuffer, // Store decoded buffer for playback
+            isDefault: false,
+          })
+        }
+
+        // Validate selectedAudioSource
+        if (this.selectedAudioSource !== 'default' && !this.getFileById(this.selectedAudioSource)) {
+          this.selectedAudioSource = 'default'
+        }
+
+        // Set current audio file
+        this.setSelectedAudioSource(this.selectedAudioSource)
+
+        console.log(`[audioUploadStore] Restored ${this.uploadedFiles.length} files from DB.`)
+      } catch (error) {
+        console.error('[audioUploadStore] Failed to initialize from DB:', error)
+      }
+    },
+
     // Initialize audio context
     initializeAudioContext() {
       if (!this.audioContext) {
@@ -104,6 +161,21 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
         // Process file using AudioFileProcessor
         const processedFile = await AudioFileProcessor.processFile(file, this.audioContext)
+
+        // Save to IndexedDB (excluding the large audioBuffer, storing just the blob)
+        const fileToSave = {
+          id: processedFile.id,
+          name: processedFile.name,
+          size: processedFile.size,
+          type: processedFile.type,
+          duration: processedFile.duration,
+          sampleRate: processedFile.sampleRate,
+          numberOfChannels: processedFile.numberOfChannels,
+          uploadedAt: processedFile.uploadedAt,
+          blob: processedFile.blob,
+          isDefault: processedFile.isDefault
+        }
+        await saveAudioFile(fileToSave)
 
         // Add to uploaded files
         this.uploadedFiles.push(processedFile)
@@ -190,6 +262,9 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         // Clean up object URL to prevent memory leaks
         AudioFileProcessor.revokeObjectUrl(file.objectUrl)
 
+        // Remove from DB
+        deleteAudioFile(fileId).catch(console.error)
+
         // Remove from array
         this.uploadedFiles.splice(fileIndex, 1)
 
@@ -211,6 +286,9 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       this.uploadedFiles.forEach((file) => {
         AudioFileProcessor.cleanupFile(file)
       })
+
+      // Clear IndexedDB
+      clearAudioFiles().catch(console.error)
 
       // Reset state
       this.uploadedFiles = []

@@ -31,7 +31,7 @@ export default {
     // Initialize theme on app startup
     this.themeStore.initializeTheme();
     this.authStore.validateSessionOnStartup();
-    this.audioUploadStore.cleanupExpiredFiles();
+    this.audioUploadStore.initStore();
   },
 };
 </script>
