@@ -12,6 +12,7 @@ import toast from '@/utils/toast'
 
 import 'primeicons/primeicons.css'
 import Ripple from 'primevue/ripple'
+import Tooltip from 'primevue/tooltip'
 
 const MyPreset = definePreset(Aura, {
   primitive: {
@@ -694,5 +695,6 @@ app.use(PrimeVue, {
 })
 
 app.directive('ripple', Ripple)
+app.directive('tooltip', Tooltip)
 
 app.mount('#app')

@@ -11,11 +11,15 @@ export const usePresetStore = defineStore('preset', {
         const response = await getPublicPresets()
         this.presets = response.data.map((p) => {
           let settingsArray = []
+          let preamp = 0
           try {
             if (p.settings && typeof p.settings === 'string') {
               const parsed = JSON.parse(p.settings)
               if (Array.isArray(parsed)) {
                 settingsArray = parsed
+              } else if (parsed.filters && Array.isArray(parsed.filters)) {
+                settingsArray = parsed.filters
+                preamp = parsed.preamp || 0
               }
             }
           } catch (e) {
@@ -78,7 +82,11 @@ export const usePresetStore = defineStore('preset', {
 
       try {
         const parsedSettings = typeof settings === 'string' ? JSON.parse(settings) : settings
-        equalizerStore.loadPreset(parsedSettings)
+        if (Array.isArray(parsedSettings)) {
+          equalizerStore.loadPreset(parsedSettings, 0)
+        } else if (parsedSettings.filters) {
+          equalizerStore.loadPreset(parsedSettings.filters, parsedSettings.preamp || 0)
+        }
       } catch (error) {
         console.error('Failed to apply preset:', error)
         throw error

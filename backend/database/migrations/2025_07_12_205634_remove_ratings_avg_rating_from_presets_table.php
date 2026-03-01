@@ -11,9 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('presets', function (Blueprint $table) {
-            $table->dropColumn('ratings_avg_rating');
-        });
+        if (Schema::hasColumn('presets', 'ratings_avg_rating')) {
+            Schema::table('presets', function (Blueprint $table) {
+                $table->dropColumn('ratings_avg_rating');
+            });
+        }
     }
 
     /**

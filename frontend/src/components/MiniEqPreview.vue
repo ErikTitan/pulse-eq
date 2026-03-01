@@ -176,10 +176,10 @@ export default {
       // Handle Glow
       const el = e.currentTarget
       const { left, top } = el.getBoundingClientRect()
-      
+
       const x = e.clientX - left
       const y = e.clientY - top
-      
+
       const { r, g, b } = this.parseHexColor(this.preset.color)
       this.glowStyle = {
         '--glow-x': `${x}px`,

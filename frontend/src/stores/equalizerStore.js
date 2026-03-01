@@ -13,6 +13,7 @@ export const useEqualizerStore = defineStore('equalizer', {
   state: () => ({
     savedState: null,
     _saveTimeout: null,
+    preamp: 0,
     filters: [],
     defaultFilters: [
       { type: 'lowshelf12', frequency: 60, gain: 0, Q: 1, bypass: false },
@@ -82,7 +83,32 @@ export const useEqualizerStore = defineStore('equalizer', {
     syncWeq8Filters() {
       if (!this.weq8) return
 
-      for (let i = 0; i < 8; i++) {
+      if (this.weq8.input && this.weq8.input.gain) {
+        this.weq8.input.gain.value = Math.pow(10, this.preamp / 20)
+      }
+
+      const maxFilters = Math.max(this.filters.length, this._maxFilterCount || 8)
+      
+      // Ensure weq8 has enough filter slots
+      if (this.weq8.spec.length < maxFilters) {
+        const initialSpec = Array.from({ length: Math.max(20, maxFilters) }, () => ({ type: 'noop', frequency: 1000, gain: 0, Q: 1, bypass: false }))
+        const newWeq8 = new WEQ8Runtime(this.audioContext, initialSpec)
+        
+        if (this.source) {
+          try { this.source.disconnect(this.weq8.input) } catch(e) {}
+          this.source.connect(newWeq8.input)
+        }
+        
+        try { this.weq8.disconnect() } catch(e) {}
+        
+        if (this.analyserNode) {
+          newWeq8.connect(this.analyserNode)
+        }
+        
+        this.weq8 = newWeq8
+      }
+
+      for (let i = 0; i < maxFilters; i++) {
         const filter = this.filters[i]
         if (filter) {
           this.weq8.setFilterType(i, filter.type)
@@ -98,13 +124,10 @@ export const useEqualizerStore = defineStore('equalizer', {
           this.weq8.setFilterType(i, 'noop')
         }
       }
+      this._maxFilterCount = this.filters.length
     },
 
     addFilter() {
-      if (this.filters.length >= 8) {
-        console.warn('Maximum number of filters (8) reached.')
-        return
-      }
       const newFilter = { type: 'peaking12', frequency: 1000, gain: 0, Q: 1, bypass: false }
       this.filters.push(newFilter)
       this.syncWeq8Filters()
@@ -127,7 +150,6 @@ export const useEqualizerStore = defineStore('equalizer', {
           filter.type = defaultFilter.type
           filter.frequency = defaultFilter.frequency
         } else {
-          // Fallback for filters beyond the initial set
           filter.type = 'peaking12'
           filter.frequency = 1000
         }
@@ -148,12 +170,10 @@ export const useEqualizerStore = defineStore('equalizer', {
       this.playbackOffset = 0
       this.isPlaying = false
 
-      // Clean up previous sources
       if (this.source) {
         try {
           this.source.stop()
         } catch (e) {
-          // ignore
         }
         this.source.disconnect()
         this.source = null
@@ -163,26 +183,23 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.audio = null
       }
 
-      // Setup weq8 and analyser if they don't exist or context was closed
       if (!this.weq8 || this.weq8.input.context.state === 'closed') {
-        this.weq8 = new WEQ8Runtime(this.audioContext)
+        const initialSpec = Array.from({ length: 16 }, () => ({ type: 'noop', frequency: 1000, gain: 0, Q: 1, bypass: false }))
+        this.weq8 = new WEQ8Runtime(this.audioContext, initialSpec)
         this.analyserNode = this.audioContext.createAnalyser()
         this.analyserNode.fftSize = 8192
         this.analyserNode.smoothingTimeConstant = 0.5
         this.weq8.connect(this.analyserNode)
         this.analyserNode.connect(this.audioContext.destination)
       } else {
-        // Ensure connections are maintained when reusing weq8
         try {
           this.weq8.connect(this.analyserNode)
           this.analyserNode.connect(this.audioContext.destination)
         } catch (e) {
-          // Ignore errors if already connected
           console.warn('[equalizerStore] Reconnection warning:', e)
         }
       }
 
-      // Create source for default audio (from path), but not for buffer
       if (!audioBuffer && audioPath) {
         this.audio = new Audio(audioPath)
         this.source = this.audioContext.createMediaElementSource(this.audio)
@@ -196,19 +213,19 @@ export const useEqualizerStore = defineStore('equalizer', {
           this.playbackOffset = 0
         })
       } else {
-        this.source = null // Ensure source is null for buffer-based playback initially
+        this.source = null 
         if (audioBuffer) {
           this.duration = audioBuffer.duration
         }
       }
 
-      // Try to load saved state
       const savedState = this.loadFromLocalStorage()
       if (savedState?.filters) {
+        this.preamp = savedState.preamp || 0
         this.filters = this.initializeWithSavedState(savedState)
       } else {
         this.filters = this.initializeFilterPositions()
-        this.syncWeq8Filters() // Sync for default filters
+        this.syncWeq8Filters() 
       }
 
       return {
@@ -271,7 +288,6 @@ export const useEqualizerStore = defineStore('equalizer', {
         await this.audio.play()
       } else if (this.audioBuffer) {
         console.log('[equalizerStore] Playing from audio buffer.')
-        // If a source is playing, stop and disconnect it.
         if (this.source) {
           try {
             this.source.stop()
@@ -302,7 +318,6 @@ export const useEqualizerStore = defineStore('equalizer', {
       } else if (this.source) {
         try {
           this.source.stop()
-          // Update offset so we resume from here
           this.playbackOffset += this.audioContext.currentTime - this.playbackStartTime
         } catch (e) {
           console.warn('Could not stop audio source, it may have already been stopped.', e)
@@ -503,8 +518,8 @@ export const useEqualizerStore = defineStore('equalizer', {
     },
 
     updateState() {
-      // Save complete filter state including all properties
       const completeState = {
+        preamp: this.preamp,
         filters: this.filters.map((filter) => ({
           type: filter.type,
           frequency: filter.frequency,
@@ -516,7 +531,6 @@ export const useEqualizerStore = defineStore('equalizer', {
 
       this.savedState = completeState
 
-      // Debounce the save operation to avoid rapid repetitive saves when sliding
       if (this._saveTimeout) {
         clearTimeout(this._saveTimeout)
       }
@@ -544,7 +558,6 @@ export const useEqualizerStore = defineStore('equalizer', {
         const savedState = localStorage.getItem('equalizerState')
         if (savedState) {
           const parsedState = JSON.parse(savedState)
-          // Validate that we have all required properties
           if (parsedState.filters && parsedState.filters.length > 0) {
             this.savedState = parsedState
             console.log('Loaded complete state:', this.savedState)
@@ -557,17 +570,10 @@ export const useEqualizerStore = defineStore('equalizer', {
         return null
       }
     },
-    loadPreset(newFilters) {
+    loadPreset(newFilters, newPreamp = 0) {
       if (!Array.isArray(newFilters)) {
         console.error('Invalid preset format: not an array.', newFilters)
         return
-      }
-
-      if (newFilters.length > 8) {
-        console.warn(
-          `Preset has ${newFilters.length} filters, but a maximum of 8 are supported. Truncating.`,
-        )
-        newFilters = newFilters.slice(0, 8)
       }
 
       const validatedFilters = newFilters.map((f) => ({
@@ -578,10 +584,20 @@ export const useEqualizerStore = defineStore('equalizer', {
         bypass: f.bypass || false,
       }))
 
+      // Sort filters by frequency so they appear in a logical low-to-high order in the UI
+      validatedFilters.sort((a, b) => a.frequency - b.frequency)
+
       this.filters = validatedFilters
+      this.preamp = newPreamp
 
       this.syncWeq8Filters()
       this.updateState()
+      
+      // Force immediate save to prevent race conditions during route navigation
+      if (this._saveTimeout) {
+        clearTimeout(this._saveTimeout)
+      }
+      this.saveToLocalStorage()
     },
     getDefaultFilters() {
       return [...this.defaultFilters]
@@ -591,7 +607,8 @@ export const useEqualizerStore = defineStore('equalizer', {
 
       if (bypass) {
         // Bypass all filters
-        for (let i = 0; i < 8; i++) {
+        const maxFilters = Math.max(this.filters.length, this._maxFilterCount || 8)
+        for (let i = 0; i < maxFilters; i++) {
           this.weq8.toggleBypass(i, true)
         }
       } else {

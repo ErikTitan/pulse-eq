@@ -95,26 +95,12 @@
             </div>
 
             <!-- EQ Preview -->
-            <MiniEqPreview
-              :preset="transformedPreset"
-              :show-audio-preview="true"
-              class="mb-6"
-            />
+            <MiniEqPreview :preset="transformedPreset" :show-audio-preview="true" class="mb-6" />
 
             <!-- Action Buttons -->
             <div class="flex space-x-3 mb-6">
-              <Button
-                @click="handleApply"
-                label="Apply Preset"
-                severity="success"
-                class="flex-1"
-              />
-              <Button
-                @click="handleDownload"
-                label="Download"
-                severity="info"
-                class="flex-1"
-              />
+              <Button @click="handleApply" label="Apply Preset" severity="success" class="flex-1" />
+              <Button @click="handleDownload" label="Download" severity="info" class="flex-1" />
             </div>
 
             <!-- Description -->

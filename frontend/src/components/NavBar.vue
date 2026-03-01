@@ -35,7 +35,7 @@ export default {
         { label: 'Home', icon: 'pi pi-fw pi-home', route: '/' },
         { label: 'Equalizer', icon: 'pi pi-fw pi-wave-pulse', route: '/equalizer' },
         { label: 'Presets', icon: 'pi pi-sliders-h', route: '/presets' },
-        { label: 'Features', icon: 'pi pi-objects-column', route: '/features' },
+        { label: 'Correction', icon: 'pi pi-headphones', route: '/correction' },
         { label: 'Contact', icon: 'pi pi-fw pi-envelope', route: '/contact' },
       ],
       isScrolled: false,

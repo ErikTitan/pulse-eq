@@ -4,6 +4,8 @@ import Button from 'primevue/button'
 import Select from 'primevue/select'
 import Message from 'primevue/message'
 import Slider from 'primevue/slider'
+import ToggleSwitch from 'primevue/toggleswitch'
+import Tooltip from 'primevue/tooltip'
 
 import { useEqualizerStore } from '@/stores/equalizerStore'
 import { useAuthStore } from '@/stores/authStore'
@@ -33,6 +35,10 @@ export default {
     FrequencyRegions,
     AudioUploadManager,
     Slider,
+    ToggleSwitch,
+  },
+  directives: {
+    tooltip: Tooltip,
   },
   data() {
     const equalizerStore = useEqualizerStore()
@@ -67,6 +73,14 @@ export default {
     },
     formattedDuration() {
       return this.formatTime(this.equalizerStore.duration)
+    },
+    isEqActive: {
+      get() {
+        return !this.audioUploadStore.isOriginalAudio
+      },
+      set() {
+        this.audioUploadStore.toggleOriginalAudio()
+      },
     },
   },
   methods: {
@@ -349,6 +363,12 @@ export default {
                   />
                 </div>
                 <div class="flex gap-4 items-center">
+                  <div
+                    class="flex items-center gap-2 px-2"
+                    v-tooltip.top="'Toggle between the original audio and the EQ processed audio'"
+                  >
+                    <ToggleSwitch v-model="isEqActive" />
+                  </div>
                   <Button icon="pi pi-play" severity="success" @click="playAudio" />
                   <Button icon="pi pi-pause" severity="secondary" @click="pauseAudio" />
                   <Button

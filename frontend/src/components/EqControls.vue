@@ -9,14 +9,15 @@ import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
 import Select from 'primevue/select'
 import AutoComplete from 'primevue/autocomplete'
+import Slider from 'primevue/slider'
 import { useEqualizerStore } from '@/stores/equalizerStore'
 import { usePresetCategoryStore } from '@/stores/presetCategoryStore'
 import { WEQ8Runtime } from 'weq8'
 
 import { useAuthStore } from '@/stores/authStore'
 import { createPreset } from '@/services/presetService'
+import { generateEqualizerApoConfig, downloadEqualizerApoConfig } from '@/services/exportService'
 import AudioFileSelector from '@/components/AudioFileSelector.vue'
-import AudioComparison from '@/components/AudioComparison.vue'
 import AudioUploadManager from '@/components/AudioUploadManager.vue'
 
 export default {
@@ -32,8 +33,8 @@ export default {
     Checkbox,
     Select,
     AutoComplete,
+    Slider,
     AudioFileSelector,
-    AudioComparison,
     AudioUploadManager,
   },
   props: {
@@ -99,7 +100,14 @@ export default {
         }
       }, 250)
     },
+    resetPreamp() {
+      this.equalizerStore.preamp = 0
+      this.equalizerStore.syncWeq8Filters()
+      this.equalizerStore.updateState()
+    },
+
     resetEQ() {
+      this.resetPreamp()
       const defaultFilters = this.equalizerStore.getDefaultFilters()
       const spacedFilters = this.equalizerStore.createSpacedFilters(
         defaultFilters,
@@ -184,13 +192,16 @@ export default {
           return
         }
 
-        const settings = this.filters.map((filter) => ({
-          type: filter.type,
-          frequency: filter.frequency,
-          gain: filter.gain,
-          Q: filter.Q,
-          bypass: filter.bypass,
-        }))
+        const settings = {
+          preamp: this.equalizerStore.preamp,
+          filters: this.filters.map((filter) => ({
+            type: filter.type,
+            frequency: filter.frequency,
+            gain: filter.gain,
+            Q: filter.Q,
+            bypass: filter.bypass,
+          }))
+        }
 
         const payload = {
           name: this.savePresetForm.name,
@@ -250,6 +261,7 @@ export default {
       const exportData = {
         name: this.preset.name,
         description: this.preset.description,
+        preamp: this.equalizerStore.preamp,
         filters: this.filters.map((filter) => ({
           type: filter.type,
           frequency: filter.frequency,
@@ -266,6 +278,14 @@ export default {
 
       this.exportedSettings = JSON.stringify(exportData, null, 2)
       this.showExportDialog = true
+    },
+
+    exportToApo() {
+      const config = generateEqualizerApoConfig(
+        this.equalizerStore.filters,
+        this.equalizerStore.preamp,
+      )
+      downloadEqualizerApoConfig(config, 'pulse-eq-apo-export.txt')
     },
 
     async copyToClipboard() {
@@ -343,7 +363,13 @@ export default {
 
     confirmImport() {
       try {
-        const importData = JSON.parse(this.importedSettings)
+        const parsed = JSON.parse(this.importedSettings)
+
+        let importData = parsed
+        // Support importing legacy array-based settings directly
+        if (Array.isArray(parsed)) {
+          importData = { filters: parsed, preamp: 0 }
+        }
 
         if (!importData.filters || !Array.isArray(importData.filters)) {
           throw new Error('Invalid filter settings format')
@@ -377,6 +403,12 @@ export default {
     },
 
     applyImportedSettings(importData) {
+      if (importData.preamp !== undefined) {
+        this.equalizerStore.preamp = importData.preamp
+      } else {
+        this.equalizerStore.preamp = 0
+      }
+
       const newFilters = importData.filters.map((filter) => ({
         ...filter,
         Q: filter.Q || 1,
@@ -425,9 +457,32 @@ export default {
         <AudioFileSelector />
       </div>
 
-      <!-- Audio Comparison -->
+      <!-- Preamp Control -->
       <div class="mb-6">
-        <AudioComparison />
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-medium text-surface-600 flex items-center gap-1">
+            Preamp
+            <i class="pi pi-info-circle text-surface-400 text-xs" v-tooltip.top="'Lower the preamp by your maximum EQ boost (e.g., -5dB for a +5dB boost) to prevent clipping.'"></i>
+          </label>
+          <div class="flex items-center gap-2">
+            <span class="text-sm text-surface-500">{{ equalizerStore.preamp.toFixed(1) }} dB</span>
+            <Button
+              icon="pi pi-undo"
+              class="p-button-rounded p-button-text p-button-sm w-6 h-6 p-0"
+              @click="resetPreamp"
+              title="Reset Preamp"
+            />
+          </div>
+        </div>
+        <Slider
+          v-model="equalizerStore.preamp"
+          :min="-24"
+          :max="24"
+          :step="0.1"
+          @update:modelValue="equalizerStore.syncWeq8Filters()"
+          @change="equalizerStore.updateState()"
+          class="w-full"
+        />
       </div>
 
       <div class="flex flex-col gap-2">
@@ -457,6 +512,15 @@ export default {
           size="small"
           rounded
           @click="showImportDialog = true"
+        />
+        <Button
+          label="Export to Peace/APO"
+          icon="pi pi-download"
+          severity="success"
+          outlined
+          size="small"
+          rounded
+          @click="exportToApo"
         />
         <Button
           label="Reset EQ"

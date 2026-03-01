@@ -9,12 +9,15 @@ use App\Http\Controllers\SocialAuthController;
 use App\Http\Controllers\PresetCategoryController;
 use App\Http\Controllers\PresetUseController;
 use App\Http\Controllers\RatingController;
+use App\Http\Controllers\HeadphoneController;
 
 Route::get('/sitemap.xml', [SitemapController::class, 'index']);
 
 // The '/api' prefix is added to maintain compatibility with the frontend.
 Route::prefix('api')->group(function () {
     // Public routes
+    Route::get('/headphones', [HeadphoneController::class, 'index'])->middleware('throttle:api');
+    Route::get('/headphones/{headphone}', [HeadphoneController::class, 'show'])->middleware('throttle:api');
     Route::get('/presets/slug/{preset:slug}', [PresetController::class, 'showBySlug'])->middleware('throttle:api');
     Route::get('/presets', [PresetController::class, 'index'])->middleware('throttle:api');
     Route::apiResource('preset-categories', PresetCategoryController::class)->middleware('throttle:api');

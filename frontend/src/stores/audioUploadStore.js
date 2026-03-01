@@ -23,7 +23,7 @@ export const useAudioUploadStore = defineStore('audioUpload', {
     currentAudioFile: null,
 
     // Original/processed audio toggle for preset comparison
-    isOriginalAudio: true,
+    isOriginalAudio: false,
 
     // Error handling
     lastError: null,
@@ -80,48 +80,40 @@ export const useAudioUploadStore = defineStore('audioUpload', {
   },
 
   actions: {
-    // Initialize store from IndexedDB
     async initStore() {
       try {
         const files = await getAudioFiles()
         const now = Date.now()
         const twentyFourHours = 24 * 60 * 60 * 1000
 
-        // Clear existing files before pushing new ones to prevent duplication on HMR
         this.uploadedFiles = []
 
         for (const file of files) {
           const uploadedAtTime = new Date(file.uploadedAt).getTime()
 
           if (now - uploadedAtTime > twentyFourHours) {
-            // Delete expired file from DB
             await deleteAudioFile(file.id)
             continue
           }
 
-          // Restore file
           const objectUrl = URL.createObjectURL(file.blob)
 
           this.uploadedFiles.push({
             ...file,
             objectUrl,
-            audioBuffer: null, // Rely on standard <audio> tag playback for restored files to avoid browser decode blocks
+            audioBuffer: null, 
             isDefault: false,
           })
         }
 
-        // Keep track of what we loaded with
         const initialSelection = this.selectedAudioSource
 
-        // Validate selectedAudioSource
         if (initialSelection !== 'default' && !this.getFileById(initialSelection)) {
           this.selectedAudioSource = 'default'
         }
 
-        // Trigger EqualizerView watcher by temporarily clearing selection
         if (this.selectedAudioSource !== 'default') {
           this.setSelectedAudioSource('default')
-          // Yield to Vue reactivity system briefly
           setTimeout(() => {
             this.setSelectedAudioSource(initialSelection)
           }, 10)
@@ -146,7 +138,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       return this.audioContext
     },
 
-    // Process and add uploaded file
     async processFile(file) {
       this.isProcessing = true
       this.processingProgress = 0
@@ -154,20 +145,16 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       let progressInterval = null
 
       try {
-        // Initialize audio context if needed
         this.initializeAudioContext()
 
-        // Simulate progress updates
         progressInterval = setInterval(() => {
           if (this.processingProgress < 90) {
             this.processingProgress += 1
           }
         }, 15)
 
-        // Process file using AudioFileProcessor
         const processedFile = await AudioFileProcessor.processFile(file, this.audioContext)
 
-        // Save to IndexedDB (excluding the large audioBuffer, storing just the blob)
         const fileToSave = {
           id: processedFile.id,
           name: processedFile.name,
@@ -182,14 +169,11 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         }
         await saveAudioFile(fileToSave)
 
-        // Add to uploaded files
         this.uploadedFiles.push(processedFile)
         console.log('[audioUploadStore] Processed file:', processedFile)
 
-        // Set as current audio file and buffer
         this.currentAudioFile = processedFile
 
-        // Find the file in the state and attach the buffer
         const fileInState = this.uploadedFiles.find((f) => f.id === processedFile.id)
         if (fileInState && processedFile.audioBuffer) {
           fileInState.audioBuffer = markRaw(processedFile.audioBuffer)
@@ -199,7 +183,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
           )
         }
 
-        // Auto-select the uploaded file
         this.selectedAudioSource = processedFile.id
 
         this.processingProgress = 100
@@ -236,7 +219,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       } finally {
         clearInterval(progressInterval)
         this.isProcessing = false
-        // Reset progress after a short delay
         setTimeout(() => {
           this.processingProgress = 0
         }, 1000)
@@ -257,23 +239,18 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       return results
     },
 
-    // Remove uploaded file
     removeFile(fileId) {
       const fileIndex = this.uploadedFiles.findIndex((file) => file.id === fileId)
 
       if (fileIndex !== -1) {
         const file = this.uploadedFiles[fileIndex]
 
-        // Clean up object URL to prevent memory leaks
         AudioFileProcessor.revokeObjectUrl(file.objectUrl)
 
-        // Remove from DB
         deleteAudioFile(fileId).catch(console.error)
 
-        // Remove from array
         this.uploadedFiles.splice(fileIndex, 1)
 
-        // If this was the selected file, switch to default
         if (this.selectedAudioSource === fileId) {
           this.selectedAudioSource = 'default'
           this.currentAudioFile = null
@@ -285,24 +262,19 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       return false
     },
 
-    // Clear all uploaded files
     clearAllFiles() {
-      // Clean up all object URLs
       this.uploadedFiles.forEach((file) => {
         AudioFileProcessor.cleanupFile(file)
       })
 
-      // Clear IndexedDB
       clearAudioFiles().catch(console.error)
 
-      // Reset state
       this.uploadedFiles = []
       this.selectedAudioSource = 'default'
       this.currentAudioFile = null
-      this.isOriginalAudio = true
+      this.isOriginalAudio = false
     },
 
-    // Set selected audio source
     setSelectedAudioSource(sourceId) {
       this.selectedAudioSource = sourceId
       console.log(`[audioUploadStore] setSelectedAudioSource: ${sourceId}`)
@@ -314,23 +286,17 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         console.log('[audioUploadStore] Found file in store:', this.currentAudioFile)
       }
 
-      // Reset to original audio when switching sources
-      this.isOriginalAudio = true
+      this.isOriginalAudio = false
     },
 
     // Toggle between original and processed audio for comparison
     toggleOriginalAudio() {
-      // Only allow toggle if a custom file is selected
-      if (this.selectedAudioSource !== 'default') {
-        this.isOriginalAudio = !this.isOriginalAudio
-      }
+      this.isOriginalAudio = !this.isOriginalAudio
     },
 
     // Set original/processed audio mode
     setOriginalAudio(isOriginal) {
-      if (this.selectedAudioSource !== 'default') {
-        this.isOriginalAudio = isOriginal
-      }
+      this.isOriginalAudio = isOriginal
     },
 
     // Get file by ID
@@ -358,14 +324,11 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       this.lastError = null
     },
 
-    // Cleanup resources when store is destroyed
     cleanup() {
-      // Clean up all object URLs
       this.uploadedFiles.forEach((file) => {
         AudioFileProcessor.cleanupFile(file)
       })
 
-      // Close audio context if it exists
       if (this.audioContext && this.audioContext.state !== 'closed') {
         this.audioContext.close()
       }
@@ -377,16 +340,13 @@ export const useAudioUploadStore = defineStore('audioUpload', {
       this.$reset()
     },
 
-    // Cleanup expired files on startup
     cleanupExpiredFiles() {
       const now = Date.now()
-      const twentyFourHours = 24 * 60 * 60 * 1000 // 24 hours in milliseconds
+      const twentyFourHours = 24 * 60 * 60 * 1000 
 
-      // Get a list of file IDs to remove
       const expiredFileIds = this.uploadedFiles
         .filter((file) => {
           if (!file.uploadedAt) {
-            // If uploadedAt is missing, treat it as expired to be safe
             return true
           }
           const uploadedAtTime = new Date(file.uploadedAt).getTime()
@@ -394,7 +354,6 @@ export const useAudioUploadStore = defineStore('audioUpload', {
         })
         .map((file) => file.id)
 
-      // Remove the files
       if (expiredFileIds.length > 0) {
         console.log(`Cleaning up ${expiredFileIds.length} expired temporary files.`)
         expiredFileIds.forEach((fileId) => {

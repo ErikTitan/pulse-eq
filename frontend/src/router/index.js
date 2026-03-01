@@ -6,7 +6,7 @@ import ContactView from '@/views/ContactView.vue'
 import PresetsView from '@/views/PresetsView.vue'
 import MyPresetsView from '@/views/MyPresetsView.vue'
 import NotFound from '@/views/NotFound.vue'
-import Features from '@/views/Features.vue'
+import CorrectionView from '@/views/CorrectionView.vue'
 import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
 import PresetPreviewModal from '../components/PresetPreviewModal.vue'
 
@@ -57,9 +57,9 @@ const router = createRouter({
       meta: { requiresAuth: true },
     },
     {
-      path: '/features',
-      name: 'features',
-      component: Features,
+      path: '/correction',
+      name: 'correction',
+      component: CorrectionView,
       meta: { requiresAuth: false },
     },
     {

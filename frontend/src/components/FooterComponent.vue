@@ -14,7 +14,7 @@ export default {
           { label: 'Presets', url: '/presets' },
         ],
         company: [
-          { label: 'Features', url: '/features' },
+          { label: 'Correction', url: '/correction' },
           { label: 'Contact', url: '/contact' },
         ],
         resources: [
