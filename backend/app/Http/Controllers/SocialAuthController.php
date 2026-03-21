@@ -5,7 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
@@ -54,6 +54,7 @@ class SocialAuthController extends Controller
                 'google_id' => $googleUser->getId(),
                 'avatar_url' => $googleUser->getAvatar(),
                 'password' => null, // No password for OAuth users
+                'email_verified_at' => now(), // Auto verify Google users
             ]);
 
             Auth::login($user);
@@ -62,7 +63,8 @@ class SocialAuthController extends Controller
             return $this->redirectToFrontend('success', $user);
 
         } catch (\Exception $e) {
-            \Log::error('Google OAuth error: ' . $e->getMessage());
+            Log::error('Google OAuth error: '.$e->getMessage());
+
             return $this->redirectToFrontend('error', null, 'Authentication failed. Please try again.');
         }
     }
@@ -80,9 +82,8 @@ class SocialAuthController extends Controller
             $params['message'] = $message;
         }
 
-
         $queryString = http_build_query($params);
 
-        return redirect($frontendUrl . '/oauth-callback?' . $queryString);
+        return redirect($frontendUrl.'/oauth-callback?'.$queryString);
     }
 }

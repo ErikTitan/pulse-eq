@@ -377,6 +377,7 @@ export default {
                     "
                     icon="pi pi-chart-bar"
                     severity="info"
+                    class="text-white"
                     @click="toggleFrequencyRegions"
                   />
                 </div>

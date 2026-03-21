@@ -37,70 +37,75 @@
           </div>
         </template>
         <template #content>
-          <div class="space-y-4">
-            <p
-              ref="description"
-              class="text-sm text-color-secondary min-h-[2.5rem]"
-              :class="{ 'line-clamp-2': !isExpanded }"
-            >
-              {{ preset.description }}
-            </p>
-            <button
-              v-if="isTruncated"
-              @click="toggleExpanded"
-              class="text-sm text-primary hover:underline"
-            >
-              {{ isExpanded ? 'Show less' : 'Show more' }}
-            </button>
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <UserAvatar
-                  v-if="showUserAvatar && preset.user"
-                  :user="preset.user"
-                  size="small"
-                  :variant="preset.user.avatar_variant || 'bauhaus'"
-                  class="flex-shrink-0"
-                />
-                <span class="text-sm text-color-secondary">
-                  {{ (preset.usageCount || 0).toLocaleString() }} users
-                </span>
-              </div>
-              <div class="flex gap-2">
-                <Button
-                  icon="pi pi-download"
-                  class="p-button-rounded p-button-outlined"
-                  @click.prevent="$emit('download', preset)"
-                  tooltip="Download"
-                />
-                <Button
-                  icon="pi pi-share-alt"
-                  class="p-button-rounded p-button-outlined"
-                  @click.prevent.stop="$emit('share', preset)"
-                  tooltip="Share"
-                />
-                <Button
-                  v-if="showActions"
-                  icon="pi pi-pencil"
-                  class="p-button-rounded p-button-outlined p-button-secondary"
-                  @click="$emit('edit', preset)"
-                  tooltip="Edit"
-                />
-                <Button
-                  v-if="showActions"
-                  icon="pi pi-trash"
-                  class="p-button-rounded p-button-outlined p-button-danger"
-                  @click="$emit('delete', preset)"
-                  tooltip="Delete"
-                />
-              </div>
+          <div class="flex flex-col h-full">
+            <div class="flex-grow space-y-2">
+              <p
+                ref="description"
+                class="text-sm text-color-secondary"
+                :class="{ 'line-clamp-2 h-10': !isExpanded }"
+              >
+                {{ preset.description || '\u00A0' }}
+              </p>
+              <button
+                v-if="isTruncated"
+                @click="toggleExpanded"
+                class="text-sm text-primary hover:underline block"
+              >
+                {{ isExpanded ? 'Show less' : 'Show more' }}
+              </button>
             </div>
-            <div class="flex flex-wrap gap-1 pt-1 border-t border-surface">
-              <Tag
-                v-for="tag in limitedTags"
-                :key="tag.id"
-                :value="tag.name"
-                class="text-xs py-0.5 px-1.5"
-              />
+
+            <div class="mt-4 pt-4 border-t border-surface space-y-4">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <UserAvatar
+                    v-if="showUserAvatar && preset.user"
+                    :user="preset.user"
+                    size="small"
+                    :variant="preset.user.avatar_variant || 'bauhaus'"
+                    class="flex-shrink-0"
+                  />
+                  <span class="text-sm text-color-secondary">
+                    {{ (preset.usageCount || 0).toLocaleString() }} users
+                  </span>
+                </div>
+                <div class="flex gap-2">
+                  <Button
+                    icon="pi pi-download"
+                    class="p-button-rounded p-button-outlined"
+                    @click.prevent="$emit('download', preset)"
+                    tooltip="Download"
+                  />
+                  <Button
+                    icon="pi pi-share-alt"
+                    class="p-button-rounded p-button-outlined"
+                    @click.prevent.stop="$emit('share', preset)"
+                    tooltip="Share"
+                  />
+                  <Button
+                    v-if="showActions"
+                    icon="pi pi-pencil"
+                    class="p-button-rounded p-button-outlined p-button-secondary"
+                    @click="$emit('edit', preset)"
+                    tooltip="Edit"
+                  />
+                  <Button
+                    v-if="showActions"
+                    icon="pi pi-trash"
+                    class="p-button-rounded p-button-outlined p-button-danger"
+                    @click="$emit('delete', preset)"
+                    tooltip="Delete"
+                  />
+                </div>
+              </div>
+              <div class="flex flex-wrap gap-1 min-h-[1.5rem]">
+                <Tag
+                  v-for="tag in limitedTags"
+                  :key="tag.id"
+                  :value="tag.name"
+                  class="text-xs py-0.5 px-1.5"
+                />
+              </div>
             </div>
           </div>
         </template>
@@ -364,8 +369,12 @@ export default {
     0 4px 6px -4px rgba(var(--shadow-color-rgb), 0.15);
 }
 
+:deep(.p-card-body) {
+  @apply h-full flex flex-col;
+}
+
 :deep(.p-card-content) {
-  @apply p-4;
+  @apply p-4 flex-grow flex flex-col;
 }
 
 :deep(.p-tag) {

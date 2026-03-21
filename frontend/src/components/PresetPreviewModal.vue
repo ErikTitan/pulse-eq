@@ -384,8 +384,12 @@ export default {
     },
     handleDownload() {
       try {
-        const settings = JSON.stringify(JSON.parse(this.currentPreset.settings), null, 2)
-        const blob = new Blob([settings], { type: 'application/json' })
+        const parsedSettings =
+          typeof this.currentPreset.settings === 'string'
+            ? JSON.parse(this.currentPreset.settings)
+            : this.currentPreset.settings
+        const settingsStr = JSON.stringify(parsedSettings, null, 2)
+        const blob = new Blob([settingsStr], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url

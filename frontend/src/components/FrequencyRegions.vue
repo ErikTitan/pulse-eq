@@ -111,24 +111,32 @@ export default {
         v-for="region in frequencyRegions"
         :key="region.id"
         class="region-card p-3 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md"
-        :class="{
-          'border-blue-500 bg-blue-50 dark:bg-blue-900/20': selectedRegion?.id === region.id,
-          'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600':
-            selectedRegion?.id !== region.id,
+        :style="{
+          backgroundColor:
+            selectedRegion?.id === region.id
+              ? 'var(--p-primary-50)'
+              : 'var(--p-content-background)',
+          borderColor:
+            selectedRegion?.id === region.id ? 'var(--p-primary-color)' : 'var(--p-surface-border)',
         }"
         @click="selectRegion(region)"
       >
-        <div class="font-medium text-sm mb-1">{{ region.name }}</div>
-        <div class="text-xs text-gray-600 dark:text-gray-400">{{ region.range }}</div>
+        <div class="font-medium text-sm mb-1" style="color: var(--p-text-color)">
+          {{ region.name }}
+        </div>
+        <div class="text-xs" style="color: var(--p-text-muted-color)">{{ region.range }}</div>
       </div>
     </div>
 
     <div v-if="selectedRegion" class="explanation-section">
-      <div class="bg-gray-50 dark:bg-gray-800 rounded-lg p-4">
-        <h4 class="font-semibold mb-2 text-blue-600 dark:text-blue-400">
+      <div
+        class="rounded-lg p-4 border"
+        style="background-color: var(--p-content-background); border-color: var(--p-surface-border)"
+      >
+        <h4 class="font-semibold mb-2" style="color: var(--p-primary-color)">
           {{ selectedRegion.name }} ({{ selectedRegion.range }})
         </h4>
-        <p class="text-sm text-gray-700 dark:text-gray-300 leading-relaxed">
+        <p class="text-sm leading-relaxed" style="color: var(--p-text-color)">
           {{ selectedRegion.description }}
         </p>
       </div>

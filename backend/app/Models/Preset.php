@@ -82,7 +82,7 @@ class Preset extends Model
 
     public function getUserRatingAttribute()
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return null;
         }
 

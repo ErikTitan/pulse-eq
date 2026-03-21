@@ -2,6 +2,7 @@
 import Select from 'primevue/select'
 import InputText from 'primevue/inputtext'
 import MultiSelect from 'primevue/multiselect'
+import Carousel from 'primevue/carousel'
 import AuthRequired from '@/components/AuthRequired.vue'
 import PresetCard from '@/components/PresetCard.vue'
 import PresetPreviewModal from '@/components/PresetPreviewModal.vue'
@@ -18,6 +19,7 @@ export default {
     Select,
     InputText,
     MultiSelect,
+    Carousel,
     AuthRequired,
     PresetCard,
     PresetPreviewModal,
@@ -55,6 +57,18 @@ export default {
         { name: 'Popular', value: 'popular' },
         { name: 'New', value: 'new' },
         { name: 'Trending', value: 'trending' },
+      ],
+      responsiveOptions: [
+        {
+          breakpoint: '1023px', // max-width for lg (Tailwind is 1024px min-width)
+          numVisible: 2,
+          numScroll: 1,
+        },
+        {
+          breakpoint: '767px', // max-width for md (Tailwind is 768px min-width)
+          numVisible: 1,
+          numScroll: 1,
+        },
       ],
       dummyPresets: Array.from({ length: 6 }, (_, i) => {
         const variation = dummyVariations[i % dummyVariations.length]
@@ -140,8 +154,17 @@ export default {
 
       return presetsToFilter
     },
+    isSearchingOrFiltering() {
+      return (
+        this.searchQuery !== '' ||
+        this.selectedCategory !== null ||
+        (this.selectedTags && this.selectedTags.length > 0) ||
+        this.selectedSort !== null
+      )
+    },
     groupedPresets() {
       const grouped = {}
+
       this.filteredPresets.forEach((preset) => {
         const categoryName = preset.preset_category ? preset.preset_category.name : 'Uncategorized'
         if (!grouped[categoryName]) {
@@ -149,6 +172,22 @@ export default {
         }
         grouped[categoryName].push(preset)
       })
+
+      // If NOT actively searching/filtering, limit to top 12 popular presets per category
+      if (!this.isSearchingOrFiltering) {
+        Object.keys(grouped).forEach((category) => {
+          // Sort by usageCount (highest first), then rating as tiebreaker
+          grouped[category].sort((a, b) => {
+            if (b.usageCount !== a.usageCount) {
+              return b.usageCount - a.usageCount
+            }
+            return b.rating - a.rating
+          })
+          // Limit to max 12 items for the carousel
+          grouped[category] = grouped[category].slice(0, 12)
+        })
+      }
+
       return grouped
     },
   },
@@ -156,8 +195,10 @@ export default {
     downloadPreset(preset) {
       if (!this.authStore.isAuthenticated) return
       try {
-        const settings = JSON.stringify(JSON.parse(preset.settings), null, 2)
-        const blob = new Blob([settings], { type: 'application/json' })
+        const parsedSettings =
+          typeof preset.settings === 'string' ? JSON.parse(preset.settings) : preset.settings
+        const settingsStr = JSON.stringify(parsedSettings, null, 2)
+        const blob = new Blob([settingsStr], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url
@@ -266,22 +307,88 @@ export default {
         />
       </div>
 
-      <!-- Presets Grid -->
+      <!-- Presets Area -->
       <div v-if="authStore.isAuthenticated">
-        <div
-          v-for="(categoryPresets, categoryName) in groupedPresets"
-          :key="categoryName"
-          class="mb-8"
-        >
-          <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
-          <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <div
-              v-for="preset in categoryPresets"
-              :key="preset.id"
-              class="block transition-transform hover:scale-105 cursor-pointer"
-              @click="openPresetModal(preset)"
+        <!-- Display Carousel View by Default -->
+        <div v-if="!isSearchingOrFiltering">
+          <div
+            v-for="(categoryPresets, categoryName) in groupedPresets"
+            :key="categoryName"
+            class="mb-8"
+          >
+            <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
+
+            <!-- Standard Grid for 3 or fewer items -->
+            <div v-if="categoryPresets.length <= 3" class="flex flex-wrap lg:px-[3.25rem]">
+              <div
+                v-for="preset in categoryPresets"
+                :key="preset.id"
+                class="w-full md:w-1/2 lg:w-1/3 p-3"
+              >
+                <div
+                  class="block transition-transform hover:-translate-y-1 hover:scale-[1.01] cursor-pointer h-full"
+                  @click="openPresetModal(preset)"
+                >
+                  <PresetCard
+                    :preset="preset"
+                    @download="downloadPreset"
+                    @share="sharePreset"
+                    class="h-full flex flex-col"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <Carousel
+              v-else
+              :value="categoryPresets"
+              :numVisible="3"
+              :numScroll="1"
+              :responsiveOptions="responsiveOptions"
+              circular
+              class="w-full"
             >
-              <PresetCard :preset="preset" @download="downloadPreset" @share="sharePreset" />
+              <template #item="slotProps">
+                <div class="p-3 h-full pb-6">
+                  <div
+                    class="block transition-transform hover:-translate-y-1 hover:scale-[1.01] cursor-pointer h-full relative z-10"
+                    @click="openPresetModal(slotProps.data)"
+                  >
+                    <PresetCard
+                      :preset="slotProps.data"
+                      @download="downloadPreset"
+                      @share="sharePreset"
+                      class="h-full flex flex-col"
+                    />
+                  </div>
+                </div>
+              </template>
+            </Carousel>
+          </div>
+        </div>
+
+        <!-- Display Grid View when Searching/Filtering -->
+        <div v-else>
+          <div
+            v-for="(categoryPresets, categoryName) in groupedPresets"
+            :key="categoryName"
+            class="mb-8"
+          >
+            <h2 class="text-2xl font-bold mb-4">{{ categoryName }}</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div
+                v-for="preset in categoryPresets"
+                :key="preset.id"
+                class="block transition-transform hover:-translate-y-1 hover:scale-[1.01] cursor-pointer h-full"
+                @click="openPresetModal(preset)"
+              >
+                <PresetCard
+                  :preset="preset"
+                  @download="downloadPreset"
+                  @share="sharePreset"
+                  class="h-full flex flex-col"
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -290,7 +397,13 @@ export default {
       <!-- Dummy Presets Grid for non-authenticated users -->
       <div v-else>
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <PresetCard v-for="preset in dummyPresets" :key="preset.id" :preset="preset" />
+          <div
+            v-for="preset in dummyPresets"
+            :key="preset.id"
+            class="block transition-transform hover:-translate-y-1 hover:scale-[1.01] cursor-pointer h-full"
+          >
+            <PresetCard :preset="preset" class="h-full flex flex-col" />
+          </div>
         </div>
       </div>
     </div>
@@ -312,6 +425,19 @@ export default {
 </template>
 
 <style scoped>
+/* Mobile specific carousel fixes */
+@media (max-width: 767px) {
+  :deep(.p-carousel-item) {
+    flex: 1 0 100%;
+    width: 100% !important;
+    padding-bottom: 1.5rem;
+  }
+}
+
+:deep(.p-carousel-content) {
+  padding: 0.5rem 0 1rem 0;
+}
+
 :deep(.p-dropdown),
 :deep(.p-multiselect) {
   @apply w-full;

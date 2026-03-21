@@ -230,11 +230,15 @@ export default {
 
         this.presets = response.data.map((p) => {
           let settingsArray = []
+          let preamp = 0
           try {
-            if (p.settings && typeof p.settings === 'string') {
-              const parsed = JSON.parse(p.settings)
+            if (p.settings) {
+              const parsed = typeof p.settings === 'string' ? JSON.parse(p.settings) : p.settings
               if (Array.isArray(parsed)) {
                 settingsArray = parsed
+              } else if (parsed.filters && Array.isArray(parsed.filters)) {
+                settingsArray = parsed.filters
+                preamp = parsed.preamp || 0
               }
             }
           } catch (e) {
@@ -299,7 +303,10 @@ export default {
 
         this.presetForm = {
           ...preset,
-          settings: JSON.stringify(JSON.parse(preset.settings), null, 2),
+          settings:
+            typeof preset.settings === 'string'
+              ? JSON.stringify(JSON.parse(preset.settings), null, 2)
+              : JSON.stringify(preset.settings, null, 2),
           public: !!preset.public,
           tagsInput: tagsInput,
         }
@@ -414,8 +421,15 @@ export default {
     applyPreset(preset) {
       try {
         const equalizerStore = useEqualizerStore()
-        const settings = JSON.parse(preset.settings)
-        equalizerStore.loadPreset(settings)
+        const settings =
+          typeof preset.settings === 'string' ? JSON.parse(preset.settings) : preset.settings
+
+        if (Array.isArray(settings)) {
+          equalizerStore.loadPreset(settings, 0)
+        } else if (settings.filters) {
+          equalizerStore.loadPreset(settings.filters, settings.preamp || 0)
+        }
+
         this.$router.push('/equalizer')
       } catch (error) {
         console.error('Failed to apply preset:', error)
@@ -423,8 +437,10 @@ export default {
     },
     downloadPreset(preset) {
       try {
-        const settings = JSON.stringify(JSON.parse(preset.settings), null, 2)
-        const blob = new Blob([settings], { type: 'application/json' })
+        const parsedSettings =
+          typeof preset.settings === 'string' ? JSON.parse(preset.settings) : preset.settings
+        const settingsStr = JSON.stringify(parsedSettings, null, 2)
+        const blob = new Blob([settingsStr], { type: 'application/json' })
         const url = URL.createObjectURL(blob)
         const a = document.createElement('a')
         a.href = url

@@ -3,10 +3,9 @@ import InputText from 'primevue/inputtext'
 import Textarea from 'primevue/textarea'
 import Button from 'primevue/button'
 import Card from 'primevue/card'
-import Divider from 'primevue/divider'
-import Timeline from 'primevue/timeline'
-import Badge from 'primevue/badge'
-import ToggleButton from 'primevue/togglebutton'
+import Message from 'primevue/message'
+import apiClient from '@/axios'
+import { useAuthStore } from '@/stores/authStore'
 
 export default {
   name: 'ContactPage',
@@ -15,10 +14,11 @@ export default {
     Textarea,
     Button,
     Card,
-    Divider,
-    Timeline,
-    Badge,
-    ToggleButton,
+    Message,
+  },
+  setup() {
+    const authStore = useAuthStore()
+    return { authStore }
   },
   data() {
     return {
@@ -30,222 +30,225 @@ export default {
         presetId: '',
         deviceType: '',
       },
-      timelineEvents: [
-        { status: 'Real-time', description: 'Preset Preview & Testing', icon: 'pi pi-play' },
-        { status: 'Universal', description: 'Cross-Platform Support', icon: 'pi pi-desktop' },
-        { status: 'Community', description: 'Active Preset Sharing', icon: 'pi pi-users' },
-      ],
-      supportCategories: [
-        { icon: 'pi pi-cog', label: 'Preset Creation Help' },
-        { icon: 'pi pi-sync', label: 'Import/Export Issues' },
-        { icon: 'pi pi-volume-up', label: 'Audio Device Support' },
-        { icon: 'pi pi-share-alt', label: 'Preset Sharing' },
-      ],
+      isLoading: false,
+      successMessage: '',
+      errorMessage: '',
     }
   },
-  computed: {
-    isDarkMode() {
-      return document.documentElement.classList.contains('my-app-dark')
-    },
+  mounted() {
+    if (this.authStore.isAuthenticated) {
+      this.form.name = this.authStore.userName
+      this.form.email = this.authStore.userEmail
+    }
   },
   methods: {
-    submitForm() {
-      console.log('Support request submitted:', this.form)
+    async submitForm() {
+      this.isLoading = true
+      this.successMessage = ''
+      this.errorMessage = ''
+
+      try {
+        const response = await apiClient.post('/contact', this.form)
+        this.successMessage = response.data.message || 'Your message has been sent successfully!'
+        this.resetForm()
+      } catch (error) {
+        if (error.response?.status === 422) {
+          this.errorMessage = Object.values(error.response.data.errors).flat().join(' ')
+        } else {
+          this.errorMessage =
+            'An error occurred while sending your message. Please try again later.'
+        }
+      } finally {
+        this.isLoading = false
+      }
+    },
+    resetForm() {
+      this.form = {
+        name: '',
+        email: '',
+        subject: '',
+        message: '',
+        presetId: '',
+        deviceType: '',
+      }
     },
   },
 }
 </script>
 
 <template>
-  <div class="min-h-screen transition-colors duration-300 flex-1 pt-24 px-6 lg:px-20">
-    <div class="container mx-auto px-4 py-8">
-      <div class="grid lg:grid-cols-2 gap-8">
-        <!-- Left Column -->
-        <div class="space-y-8">
-          <Card class="bg-glass backdrop-blur-lg shadow-xl">
-            <template #title>
-              <h2 class="text-3xl font-bold mb-4">Contact WEB-EQ Support</h2>
-            </template>
-            <template #content>
-              <form @submit.prevent="submitForm" class="space-y-6">
-                <div class="space-y-2">
-                  <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Name</label>
-                  <InputText v-model="form.name" class="w-full" />
-                </div>
-                <div class="space-y-2">
-                  <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Email</label>
-                  <InputText v-model="form.email" type="email" class="w-full" />
-                </div>
-                <div class="space-y-2">
-                  <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Device Type</label>
-                  <InputText
-                    v-model="form.deviceType"
-                    placeholder="Headphone/Speaker Model"
-                    class="w-full"
-                  />
-                </div>
-                <div class="space-y-2">
-                  <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'"
-                    >Preset ID (if applicable)</label
-                  >
-                  <InputText
-                    v-model="form.presetId"
-                    placeholder="Enter preset ID if related to specific preset"
-                    class="w-full"
-                  />
-                </div>
-                <div class="space-y-2">
-                  <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Message</label>
-                  <Textarea
-                    v-model="form.message"
-                    rows="4"
-                    class="w-full"
-                    placeholder="Describe your query or issue. For preset-related questions, please include your use case (gaming, music genre, etc.)"
-                  />
-                </div>
-                <Button label="Send Message" icon="pi pi-send" class="w-full p-button-success" />
-              </form>
-            </template>
-          </Card>
+  <div class="min-h-screen transition-colors duration-300 flex-1 pt-24 px-6 lg:px-20 pb-12">
+    <div class="container mx-auto px-4 max-w-3xl flex flex-col gap-8">
+      <!-- Contact Form Card -->
+      <Card
+        class="bg-glass backdrop-blur-lg shadow-xl"
+        :class="isDarkMode ? 'border-white/10' : 'border-gray-200'"
+      >
+        <template #title>
+          <h2
+            class="text-3xl font-bold mb-2 text-center"
+            :class="isDarkMode ? 'text-white' : 'text-gray-900'"
+          >
+            Contact Support
+          </h2>
+          <p
+            class="text-center text-sm font-normal"
+            :class="isDarkMode ? 'text-gray-400' : 'text-gray-600'"
+          >
+            Have a question or found an issue? Send us a message and we'll get back to you.
+          </p>
+        </template>
+        <template #content>
+          <Message
+            v-if="successMessage"
+            severity="success"
+            :closable="true"
+            @close="successMessage = ''"
+            class="mb-6"
+          >
+            {{ successMessage }}
+          </Message>
+          <Message
+            v-if="errorMessage"
+            severity="error"
+            :closable="true"
+            @close="errorMessage = ''"
+            class="mb-6"
+          >
+            {{ errorMessage }}
+          </Message>
 
-          <!-- Features Timeline -->
-          <Card class="bg-glass backdrop-blur-lg shadow-xl">
-            <template #title>
-              <h3 class="text-2xl font-bold" :class="isDarkMode ? 'text-white' : 'text-gray-800'">
-                WEB-EQ Features
-              </h3>
-            </template>
-            <template #content>
-              <Timeline :value="timelineEvents" class="mt-4">
-                <template #content="slotProps">
-                  <div class="flex items-center">
-                    <i :class="[slotProps.item.icon, 'text-2xl text-primary mr-4']"></i>
-                    <div>
-                      <span
-                        class="font-bold block"
-                        :class="isDarkMode ? 'text-white' : 'text-gray-800'"
-                      >
-                        {{ slotProps.item.status }}
-                      </span>
-                      <span :class="isDarkMode ? 'text-gray-300' : 'text-gray-600'">
-                        {{ slotProps.item.description }}
-                      </span>
-                    </div>
-                  </div>
-                </template>
-              </Timeline>
-            </template>
-          </Card>
-        </div>
-
-        <!-- Right Column -->
-        <div class="space-y-8">
-          <!-- Support Categories -->
-          <Card class="bg-glass backdrop-blur-lg shadow-xl">
-            <template #title>
-              <h2 class="text-3xl font-bold mb-4">Support Categories</h2>
-            </template>
-            <template #content>
-              <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div
-                  v-for="category in supportCategories"
-                  :key="category.label"
-                  class="flex items-center p-4 bg-primary/10 rounded-lg"
-                >
-                  <i :class="[category.icon, 'text-2xl text-primary mr-3']"></i>
-                  <span :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">{{
-                    category.label
-                  }}</span>
-                </div>
+          <form @submit.prevent="submitForm" class="space-y-6 mt-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Name</label>
+                <InputText
+                  v-model="form.name"
+                  required
+                  readonly
+                  class="w-full !bg-surface-200/20 dark:!bg-white/5 cursor-not-allowed"
+                />
               </div>
+              <div class="space-y-2">
+                <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Email</label>
+                <InputText
+                  v-model="form.email"
+                  type="email"
+                  required
+                  readonly
+                  class="w-full !bg-surface-200/20 dark:!bg-white/5 cursor-not-allowed"
+                />
+              </div>
+            </div>
 
-              <!-- Quick Links -->
-              <div class="mt-8">
+            <div class="space-y-2">
+              <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Subject</label>
+              <InputText v-model="form.subject" required class="w-full" />
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div class="space-y-2">
+                <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'"
+                  >Device Type (Optional)</label
+                >
+                <InputText
+                  v-model="form.deviceType"
+                  placeholder="Headphone/Speaker Model"
+                  class="w-full"
+                />
+              </div>
+              <div class="space-y-2">
+                <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'"
+                  >Preset ID (Optional)</label
+                >
+                <InputText v-model="form.presetId" placeholder="e.g. prst_123abc" class="w-full" />
+              </div>
+            </div>
+
+            <div class="space-y-2">
+              <label :class="isDarkMode ? 'text-gray-300' : 'text-gray-700'">Message</label>
+              <Textarea
+                v-model="form.message"
+                required
+                rows="6"
+                class="w-full resize-y"
+                placeholder="Describe your query or issue in detail..."
+              />
+            </div>
+            <Button
+              :loading="isLoading"
+              label="Send Message"
+              icon="pi pi-send"
+              type="submit"
+              class="w-full p-4 p-button-success"
+            />
+          </form>
+        </template>
+      </Card>
+
+      <!-- GitHub Repository Card -->
+      <a
+        href="https://github.com/ErikTitan/pulse-eq"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="block transition-transform hover:scale-[1.02] duration-300 focus:outline-none focus:ring-2 focus:ring-primary rounded-xl"
+      >
+        <Card
+          class="bg-glass backdrop-blur-lg shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden relative cursor-pointer group"
+          :class="isDarkMode ? 'border-primary-500' : 'border-primary-300'"
+        >
+          <template #content>
+            <div class="flex items-center gap-6 p-2">
+              <div
+                class="flex-shrink-0 flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 text-primary group-hover:bg-primary group-hover:text-white transition-colors duration-300"
+              >
+                <i class="pi pi-github text-4xl"></i>
+              </div>
+              <div>
                 <h3
-                  class="text-xl font-bold mb-4"
+                  class="text-xl font-bold mb-1"
                   :class="isDarkMode ? 'text-white' : 'text-gray-800'"
                 >
-                  Quick Links
+                  PULSE-EQ is Open Source
                 </h3>
-                <div class="space-y-4">
-                  <Button
-                    icon="pi pi-file-pdf"
-                    label="User Guide"
-                    class="p-button-outlined w-full"
-                  />
-                  <Button
-                    icon="pi pi-list"
-                    label="Preset Directory"
-                    class="p-button-outlined w-full"
-                  />
-                  <Button
-                    icon="pi pi-compass"
-                    label="Tuning Guidelines"
-                    class="p-button-outlined w-full"
-                  />
-                </div>
+                <p :class="isDarkMode ? 'text-gray-400' : 'text-gray-600'" class="text-sm m-0">
+                  Want to contribute, report a bug directly, or view the source code? Visit our
+                  repository on GitHub.
+                </p>
               </div>
-            </template>
-          </Card>
-
-          <!-- Stats Card -->
-          <Card class="bg-glass backdrop-blur-lg shadow-xl">
-            <template #title>
-              <h3 class="text-2xl font-bold" :class="isDarkMode ? 'text-white' : 'text-gray-800'">
-                WEB-EQ Community
-              </h3>
-            </template>
-            <template #content>
-              <div class="grid grid-cols-2 gap-4">
-                <div class="text-center p-4 rounded-lg bg-primary/10">
-                  <h4 class="text-3xl font-bold text-primary">10K+</h4>
-                  <p :class="isDarkMode ? 'text-gray-300' : 'text-gray-600'">Active Users</p>
-                </div>
-                <div class="text-center p-4 rounded-lg bg-primary/10">
-                  <h4 class="text-3xl font-bold text-primary">5K+</h4>
-                  <p :class="isDarkMode ? 'text-gray-300' : 'text-gray-600'">Shared Presets</p>
-                </div>
-                <div class="text-center p-4 rounded-lg bg-primary/10">
-                  <h4 class="text-3xl font-bold text-primary">100+</h4>
-                  <p :class="isDarkMode ? 'text-gray-300' : 'text-gray-600'">Device Profiles</p>
-                </div>
-                <div class="text-center p-4 rounded-lg bg-primary/10">
-                  <h4 class="text-3xl font-bold text-primary">4.9★</h4>
-                  <p :class="isDarkMode ? 'text-gray-300' : 'text-gray-600'">User Rating</p>
-                </div>
+              <div class="ml-auto flex-shrink-0 text-primary pr-2">
+                <i class="pi pi-external-link text-xl"></i>
               </div>
-            </template>
-          </Card>
-        </div>
-      </div>
+            </div>
+          </template>
+        </Card>
+      </a>
     </div>
   </div>
 </template>
 
 <style scoped>
 .bg-glass {
-  border: 1px solid v-bind("isDarkMode ? 'rgba(255, 255, 255, 0.125)' : 'rgba(0, 0, 0, 0.125)'");
+  background-color: var(--p-surface-0);
+  border: 1px solid var(--p-surface-200);
+}
+
+.my-app-dark .bg-glass {
+  background-color: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.125);
 }
 
 :deep(.p-inputtext),
 :deep(.p-card) {
   background: transparent;
+  color: var(--p-text-color);
 }
 
-:deep(.p-timeline-event-content),
-:deep(.p-timeline-event-opposite) {
-  @apply text-sm;
+.my-app-dark :deep(.p-inputtext) {
+  color: var(--p-text-color);
 }
 
 :deep(.p-button) {
   @apply transition-all duration-300;
-}
-
-:deep(.p-divider) {
-  @apply my-4;
-}
-
-:deep(.p-togglebutton.p-highlight) {
-  background: #22c55e;
 }
 </style>

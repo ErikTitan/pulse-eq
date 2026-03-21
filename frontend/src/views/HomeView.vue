@@ -2,6 +2,7 @@
 import Button from 'primevue/button'
 import Footer from '@/components/FooterComponent.vue'
 import AnimatedGradientHeader from '@/components/AnimatedGradientHeader.vue'
+
 export default {
   name: 'home',
   emits: ['showLogin', 'showRegister'],
@@ -9,6 +10,18 @@ export default {
     Button,
     Footer,
     AnimatedGradientHeader,
+  },
+  mounted() {
+    if (this.$route.query.showLogin === 'true' || this.$route.query.login === 'true') {
+      // Clear the query param to prevent re-triggering on refresh
+      const query = { ...this.$route.query }
+      delete query.login
+      delete query.showLogin
+      this.$router.replace({ query })
+
+      // Emit event to open login modal (handled by App.vue or parent component)
+      this.$emit('showLogin')
+    }
   },
 }
 </script>

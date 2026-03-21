@@ -13,8 +13,9 @@ export const usePresetStore = defineStore('preset', {
           let settingsArray = []
           let preamp = 0
           try {
-            if (p.settings && typeof p.settings === 'string') {
-              const parsed = JSON.parse(p.settings)
+            if (p.settings) {
+              const parsed = typeof p.settings === 'string' ? JSON.parse(p.settings) : p.settings
+
               if (Array.isArray(parsed)) {
                 settingsArray = parsed
               } else if (parsed.filters && Array.isArray(parsed.filters)) {

@@ -13,8 +13,6 @@ class RatingPolicy
     /**
      * Determine whether the user can create models.
      *
-     * @param  \App\Models\User  $user
-     * @param  \App\Models\Preset  $preset
      * @return \Illuminate\Auth\Access\Response|bool
      */
     public function create(User $user, Preset $preset)
@@ -25,6 +23,6 @@ class RatingPolicy
         }
 
         // Prevent users from rating a preset more than once
-        return !$preset->ratings()->where('user_id', $user->id)->exists();
+        return ! $preset->ratings()->where('user_id', $user->id)->exists();
     }
 }

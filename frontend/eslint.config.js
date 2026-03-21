@@ -22,13 +22,15 @@ export default [
     },
   },
   {
-    'vue/no-reserved-component-names': [
-      'error',
-      {
-        disallowVueBuiltInComponents: false,
-        disallowVue3BuiltInComponents: false,
-        htmlElementCaseSensitive: false,
-      },
-    ],
+    rules: {
+      'vue/no-reserved-component-names': [
+        'error',
+        {
+          disallowVueBuiltInComponents: false,
+          disallowVue3BuiltInComponents: false,
+          htmlElementCaseSensitive: false,
+        },
+      ],
+    },
   },
 ]

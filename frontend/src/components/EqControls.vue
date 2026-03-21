@@ -7,6 +7,7 @@ import Textarea from 'primevue/textarea'
 import FileUpload from 'primevue/fileupload'
 import InputText from 'primevue/inputtext'
 import Checkbox from 'primevue/checkbox'
+import ColorPicker from 'primevue/colorpicker'
 import Select from 'primevue/select'
 import AutoComplete from 'primevue/autocomplete'
 import Slider from 'primevue/slider'
@@ -16,7 +17,7 @@ import { WEQ8Runtime } from 'weq8'
 
 import { useAuthStore } from '@/stores/authStore'
 import { createPreset } from '@/services/presetService'
-import { generateEqualizerApoConfig, downloadEqualizerApoConfig } from '@/services/exportService'
+import { SUPPORTED_APPS, generateExportConfig, downloadConfig } from '@/services/exportService'
 import AudioFileSelector from '@/components/AudioFileSelector.vue'
 import AudioUploadManager from '@/components/AudioUploadManager.vue'
 
@@ -31,6 +32,7 @@ export default {
     FileUpload,
     InputText,
     Checkbox,
+    ColorPicker,
     Select,
     AutoComplete,
     Slider,
@@ -74,18 +76,32 @@ export default {
       },
       uploadedFile: null,
       showExportDialog: false,
+      showFormatExportDialog: false,
       showImportDialog: false,
       showSaveDialog: false,
       showUploadDialog: false,
       exportedSettings: '',
       importedSettings: '',
+      supportedApps: SUPPORTED_APPS,
+      selectedExportApp: 'apo',
       savePresetForm: {
         name: '',
         description: '',
         preset_category_id: null,
         public: false,
+        color: '4ade80',
         tags: [],
       },
+      availableColors: [
+        '4ade80', // Green
+        '3b82f6', // Blue
+        'a855f7', // Purple
+        'f97316', // Orange
+        'ef4444', // Red
+        'facc15', // Yellow
+        '06b6d4', // Cyan
+        'ec4899', // Light Blue
+      ],
       filteredTags: [],
     }
   },
@@ -200,7 +216,7 @@ export default {
             gain: filter.gain,
             Q: filter.Q,
             bypass: filter.bypass,
-          }))
+          })),
         }
 
         const payload = {
@@ -208,7 +224,10 @@ export default {
           description: this.savePresetForm.description,
           preset_category_id: this.savePresetForm.preset_category_id,
           public: this.savePresetForm.public,
-          settings: JSON.stringify(settings),
+          color: this.savePresetForm.color.startsWith('#')
+            ? this.savePresetForm.color
+            : `#${this.savePresetForm.color}`,
+          settings: settings,
           tags: this.savePresetForm.tags,
         }
 
@@ -227,6 +246,7 @@ export default {
           description: '',
           preset_category_id: null,
           public: false,
+          color: '4ade80',
           tags: [],
         }
       } catch (error) {
@@ -280,12 +300,27 @@ export default {
       this.showExportDialog = true
     },
 
-    exportToApo() {
-      const config = generateEqualizerApoConfig(
+    exportToApp() {
+      const app = this.supportedApps.find((a) => a.id === this.selectedExportApp)
+      if (!app) return
+
+      const configString = generateExportConfig(
+        this.selectedExportApp,
         this.equalizerStore.filters,
         this.equalizerStore.preamp,
       )
-      downloadEqualizerApoConfig(config, 'pulse-eq-apo-export.txt')
+
+      const filename = `pulse-eq-export${app.ext}`
+      downloadConfig(configString, filename, app.mime)
+
+      this.showFormatExportDialog = false
+
+      this.$toast.add({
+        severity: 'success',
+        summary: 'Exported!',
+        detail: `Settings exported for ${app.name}`,
+        life: 3000,
+      })
     },
 
     async copyToClipboard() {
@@ -462,7 +497,12 @@ export default {
         <div class="flex items-center justify-between mb-2">
           <label class="text-sm font-medium text-surface-600 flex items-center gap-1">
             Preamp
-            <i class="pi pi-info-circle text-surface-400 text-xs" v-tooltip.top="'Lower the preamp by your maximum EQ boost (e.g., -5dB for a +5dB boost) to prevent clipping.'"></i>
+            <i
+              class="pi pi-info-circle text-surface-400 text-xs"
+              v-tooltip.top="
+                'Lower the preamp by your maximum EQ boost (e.g., -5dB for a +5dB boost) to prevent clipping.'
+              "
+            ></i>
           </label>
           <div class="flex items-center gap-2">
             <span class="text-sm text-surface-500">{{ equalizerStore.preamp.toFixed(1) }} dB</span>
@@ -514,13 +554,13 @@ export default {
           @click="showImportDialog = true"
         />
         <Button
-          label="Export to Peace/APO"
+          label="Export App Settings"
           icon="pi pi-download"
           severity="success"
           outlined
           size="small"
           rounded
-          @click="exportToApo"
+          @click="showFormatExportDialog = true"
         />
         <Button
           label="Reset EQ"
@@ -570,7 +610,7 @@ export default {
               maxlength="80"
             />
             <small :class="{ 'text-red-500': savePresetForm.description.length >= 80 }"
-              >{{ savePresetForm.description.length }}/100</small
+              >{{ savePresetForm.description.length }}/80</small
             >
           </div>
           <div class="flex flex-col gap-2">
@@ -594,6 +634,10 @@ export default {
               optionValue="id"
               placeholder="Select a Category"
             />
+          </div>
+          <div class="flex flex-col gap-2">
+            <label for="preset-color">Chart Color</label>
+            <ColorPicker id="preset-color" v-model="savePresetForm.color" />
           </div>
           <div class="flex items-center gap-2">
             <Checkbox id="preset-public" v-model="savePresetForm.public" :binary="true" />
@@ -669,6 +713,39 @@ export default {
               :disabled="!importedSettings"
               @click="confirmImport"
             />
+          </div>
+        </div>
+      </Dialog>
+      <!-- Export App Settings Dialog -->
+      <Dialog
+        v-model:visible="showFormatExportDialog"
+        header="Export to Equalizer App"
+        modal
+        style="width: 30vw"
+        dismissableMask
+      >
+        <div class="flex flex-col gap-4">
+          <div class="text-sm text-surface-600">
+            Select your target equalizer application to generate the correct configuration format.
+          </div>
+          <div class="flex flex-col gap-2">
+            <label class="text-sm font-medium">Equalizer App</label>
+            <Select
+              v-model="selectedExportApp"
+              :options="supportedApps"
+              optionLabel="name"
+              optionValue="id"
+              class="w-full"
+            />
+          </div>
+          <div class="flex justify-end gap-2 mt-4">
+            <Button
+              label="Cancel"
+              severity="secondary"
+              text
+              @click="showFormatExportDialog = false"
+            />
+            <Button label="Download File" severity="primary" @click="exportToApp" />
           </div>
         </div>
       </Dialog>

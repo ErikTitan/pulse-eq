@@ -4,11 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Preset;
 use App\Models\Tag;
-use App\Models\PresetCategory;
 use App\Rules\AsciiOnly;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
+use Illuminate\Http\Request;
 use Mews\Purifier\Facades\Purifier;
 
 class PresetController extends Controller
@@ -35,7 +33,7 @@ class PresetController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:50', new AsciiOnly, 'blasp_check'],
             'description' => ['nullable', 'string', 'max:80', new AsciiOnly, 'blasp_check'],
-            'settings' => 'required|json',
+            'settings' => 'required|array',
             'public' => 'boolean',
             'preset_category_id' => 'required|exists:preset_categories,id',
             'color' => 'string|max:7',
@@ -56,6 +54,7 @@ class PresetController extends Controller
         if (isset($validated['tags'])) {
             $tags = collect($validated['tags'])->map(function ($tagName) {
                 $cleanTagName = Purifier::clean($tagName, 'strict');
+
                 return Tag::firstOrCreate(['name' => $cleanTagName])->id;
             });
             $preset->tags()->sync($tags);
@@ -71,7 +70,7 @@ class PresetController extends Controller
         $validated = $request->validate([
             'name' => ['sometimes', 'string', 'max:50', new AsciiOnly, 'blasp_check'],
             'description' => ['nullable', 'string', 'max:80', new AsciiOnly, 'blasp_check'],
-            'settings' => 'json',
+            'settings' => 'array',
             'public' => 'boolean',
             'preset_category_id' => 'exists:preset_categories,id',
             'color' => 'string|max:7',
@@ -92,6 +91,7 @@ class PresetController extends Controller
         if (isset($validated['tags'])) {
             $tags = collect($validated['tags'])->map(function ($tagName) {
                 $cleanTagName = Purifier::clean($tagName, 'strict');
+
                 return Tag::firstOrCreate(['name' => $cleanTagName])->id;
             });
             $preset->tags()->sync($tags);
@@ -118,7 +118,7 @@ class PresetController extends Controller
             'tags',
             'ratings' => function ($query) {
                 $query->where('user_id', auth()->id());
-            }
+            },
         ])->append('user_rating'));
     }
 
@@ -132,17 +132,18 @@ class PresetController extends Controller
             function (string $attribute, mixed $value, \Closure $fail) {
                 // Validate each tag
                 foreach ($value as $tag) {
-                    if (!is_string($tag) || strlen($tag) > 20) {
+                    if (! is_string($tag) || strlen($tag) > 20) {
                         $fail('Each tag must be a string with maximum 20 characters.');
+
                         return;
                     }
                 }
                 // Validate total character count
-                $totalChars = collect($value)->sum(fn($tag) => strlen($tag));
+                $totalChars = collect($value)->sum(fn ($tag) => strlen($tag));
                 if ($totalChars > 100) {
                     $fail('The combined length of all tags cannot exceed 100 characters.');
                 }
-            }
+            },
         ];
     }
 }

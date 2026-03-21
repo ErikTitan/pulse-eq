@@ -101,7 +101,7 @@ export const useAudioUploadStore = defineStore('audioUpload', {
           this.uploadedFiles.push({
             ...file,
             objectUrl,
-            audioBuffer: null, 
+            audioBuffer: null,
             isDefault: false,
           })
         }
@@ -342,7 +342,7 @@ export const useAudioUploadStore = defineStore('audioUpload', {
 
     cleanupExpiredFiles() {
       const now = Date.now()
-      const twentyFourHours = 24 * 60 * 60 * 1000 
+      const twentyFourHours = 24 * 60 * 60 * 1000
 
       const expiredFileIds = this.uploadedFiles
         .filter((file) => {

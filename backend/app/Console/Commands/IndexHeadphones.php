@@ -2,9 +2,9 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Headphone;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\File;
-use App\Models\Headphone;
 
 class IndexHeadphones extends Command
 {
@@ -39,8 +39,9 @@ class IndexHeadphones extends Command
     {
         $resultsPath = storage_path('app/autoeq_results');
 
-        if (!File::isDirectory($resultsPath)) {
+        if (! File::isDirectory($resultsPath)) {
             $this->error("Directory not found: {$resultsPath}");
+
             return;
         }
 
@@ -53,11 +54,11 @@ class IndexHeadphones extends Command
             if (str_ends_with($file->getFilename(), 'ParametricEQ.txt')) {
                 // Determine source and headphone name from path
                 // Path format: storage/app/autoeq_results/source/form_factor/Headphone Name/Headphone Name ParametricEQ.txt
-                
+
                 $path = $file->getPathname();
-                $relativePath = str_replace($resultsPath . '/', '', $path);
+                $relativePath = str_replace($resultsPath.'/', '', $path);
                 $parts = explode('/', $relativePath);
-                
+
                 if (count($parts) >= 3) {
                     $source = $parts[0];
                     $fullName = basename($file->getPath());
@@ -107,15 +108,15 @@ class IndexHeadphones extends Command
             if (str_starts_with($line, 'Preamp:')) {
                 // Preamp: -6.5 dB
                 if (preg_match('/Preamp:\s*([-\d.]+)\s*dB/', $line, $matches)) {
-                    $preamp = (float)$matches[1];
+                    $preamp = (float) $matches[1];
                 }
             } elseif (str_starts_with($line, 'Filter')) {
                 // Filter 1: ON PK Fc 30 Hz Gain 3.5 dB Q 1.4
                 if (preg_match('/Filter \d+: ON ([A-Z]+) Fc ([\d.]+) Hz Gain ([\d.-]+) dB Q ([\d.]+)/', $line, $matches)) {
                     $type = $matches[1];
-                    $fc = (float)$matches[2];
-                    $gain = (float)$matches[3];
-                    $q = (float)$matches[4];
+                    $fc = (float) $matches[2];
+                    $gain = (float) $matches[3];
+                    $q = (float) $matches[4];
 
                     $mappedType = $this->filterTypeMap[$type] ?? null;
                     if ($mappedType) {

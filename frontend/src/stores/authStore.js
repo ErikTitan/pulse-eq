@@ -81,6 +81,9 @@ export const useAuthStore = defineStore('auth', {
 
         if (error.response?.status === 422) {
           errorMessage = Object.values(error.response.data.errors).flat().join(' ')
+        } else if (error.response?.status === 403 && error.response.data.needs_verification) {
+          errorMessage = error.response.data.message
+          return { success: false, error: errorMessage, needsVerification: true }
         } else if (error.response?.status === 401) {
           errorMessage = error.response.data.message || 'Invalid credentials.'
         }
@@ -98,19 +101,10 @@ export const useAuthStore = defineStore('auth', {
       this.error = null
 
       try {
-        // 1. Attempt registration
         const response = await apiClient.post('/register', userData)
         console.log('Register response:', response.data)
 
-        // 3. Automatically log in the user after registration
-        const loginResult = await this.loginAfterRegister(userData.email, userData.password)
-
-        if (loginResult.success) {
-          return { success: true, user: loginResult.user }
-        } else {
-          this.error = 'Registration successful, but auto-login failed. Please log in manually.'
-          return { success: false, error: this.error }
-        }
+        return { success: true, message: response.data.message }
       } catch (error) {
         console.error('Registration failed:', error.response?.data || error.message)
 
@@ -206,6 +200,77 @@ export const useAuthStore = defineStore('auth', {
       } catch (error) {
         console.error('Google OAuth initiation failed:', error)
         this.error = 'Failed to initiate Google login'
+        this.isLoading = false
+      }
+    },
+
+    // Forgot password (send reset link)
+    async forgotPassword(email) {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const response = await apiClient.post('/forgot-password', { email })
+        return { success: true, message: response.data.message }
+      } catch (error) {
+        console.error('Forgot password failed:', error.response?.data || error.message)
+
+        let errorMessage = 'Failed to send reset link. Please try again.'
+        if (error.response?.status === 422) {
+          errorMessage = Object.values(error.response.data.errors).flat().join(' ')
+        }
+
+        this.error = errorMessage
+        return { success: false, error: errorMessage }
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    // Reset user password
+    async resetPassword(data) {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const response = await apiClient.post('/reset-password', data)
+        return { success: true, message: response.data.message }
+      } catch (error) {
+        console.error('Password reset failed:', error.response?.data || error.message)
+
+        let errorMessage = 'Failed to reset password. Please try again.'
+
+        if (error.response?.status === 422) {
+          errorMessage = Object.values(error.response.data.errors).flat().join(' ')
+        }
+
+        this.error = errorMessage
+        return { success: false, error: errorMessage }
+      } finally {
+        this.isLoading = false
+      }
+    },
+
+    // Resend verification email
+    async resendVerification(email) {
+      this.isLoading = true
+      this.error = null
+
+      try {
+        const response = await apiClient.post('/email/resend', { email })
+        return { success: true, message: response.data.message }
+      } catch (error) {
+        console.error('Resend verification failed:', error.response?.data || error.message)
+
+        let errorMessage = 'Failed to resend verification link. Please try again.'
+
+        if (error.response?.status === 400 || error.response?.status === 404) {
+          errorMessage = error.response.data.message
+        }
+
+        this.error = errorMessage
+        return { success: false, error: errorMessage }
+      } finally {
         this.isLoading = false
       }
     },

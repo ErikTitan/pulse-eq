@@ -8,6 +8,8 @@ import MyPresetsView from '@/views/MyPresetsView.vue'
 import NotFound from '@/views/NotFound.vue'
 import CorrectionView from '@/views/CorrectionView.vue'
 import OAuthCallbackView from '@/views/OAuthCallbackView.vue'
+import ResetPasswordView from '@/views/ResetPasswordView.vue'
+import VerifyEmailView from '@/views/VerifyEmailView.vue'
 import PresetPreviewModal from '../components/PresetPreviewModal.vue'
 
 const router = createRouter({
@@ -29,7 +31,7 @@ const router = createRouter({
       path: '/contact',
       name: 'contact',
       component: ContactView,
-      meta: { requiresAuth: false },
+      meta: { requiresAuth: true },
     },
     {
       path: '/presets',
@@ -66,6 +68,18 @@ const router = createRouter({
       path: '/oauth-callback',
       name: 'oauth-callback',
       component: OAuthCallbackView,
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/reset-password',
+      name: 'reset-password',
+      component: ResetPasswordView,
+      meta: { requiresAuth: false },
+    },
+    {
+      path: '/verify-email',
+      name: 'verify-email',
+      component: VerifyEmailView,
       meta: { requiresAuth: false },
     },
     {

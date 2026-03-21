@@ -51,6 +51,17 @@ export default {
           typeof this.preset.settings === 'string'
             ? JSON.parse(this.preset.settings)
             : this.preset.settings
+
+        // Check if new format { preamp, filters }
+        if (
+          settings &&
+          typeof settings === 'object' &&
+          !Array.isArray(settings) &&
+          settings.filters
+        ) {
+          return settings.filters
+        }
+
         return Array.isArray(settings) ? settings : []
       } catch (e) {
         console.error('Error parsing preset settings:', e)

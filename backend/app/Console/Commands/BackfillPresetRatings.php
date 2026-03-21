@@ -40,6 +40,6 @@ class BackfillPresetRatings extends Command
             }
         });
 
-        $this->info(PHP_EOL . 'Preset ratings backfilled successfully.');
+        $this->info(PHP_EOL.'Preset ratings backfilled successfully.');
     }
 }

@@ -88,23 +88,33 @@ export const useEqualizerStore = defineStore('equalizer', {
       }
 
       const maxFilters = Math.max(this.filters.length, this._maxFilterCount || 8)
-      
+
       // Ensure weq8 has enough filter slots
       if (this.weq8.spec.length < maxFilters) {
-        const initialSpec = Array.from({ length: Math.max(20, maxFilters) }, () => ({ type: 'noop', frequency: 1000, gain: 0, Q: 1, bypass: false }))
+        const initialSpec = Array.from({ length: Math.max(20, maxFilters) }, () => ({
+          type: 'noop',
+          frequency: 1000,
+          gain: 0,
+          Q: 1,
+          bypass: false,
+        }))
         const newWeq8 = new WEQ8Runtime(this.audioContext, initialSpec)
-        
+
         if (this.source) {
-          try { this.source.disconnect(this.weq8.input) } catch(e) {}
+          try {
+            this.source.disconnect(this.weq8.input)
+          } catch (e) {}
           this.source.connect(newWeq8.input)
         }
-        
-        try { this.weq8.disconnect() } catch(e) {}
-        
+
+        try {
+          this.weq8.disconnect()
+        } catch (e) {}
+
         if (this.analyserNode) {
           newWeq8.connect(this.analyserNode)
         }
-        
+
         this.weq8 = newWeq8
       }
 
@@ -173,8 +183,7 @@ export const useEqualizerStore = defineStore('equalizer', {
       if (this.source) {
         try {
           this.source.stop()
-        } catch (e) {
-        }
+        } catch (e) {}
         this.source.disconnect()
         this.source = null
       }
@@ -184,7 +193,13 @@ export const useEqualizerStore = defineStore('equalizer', {
       }
 
       if (!this.weq8 || this.weq8.input.context.state === 'closed') {
-        const initialSpec = Array.from({ length: 16 }, () => ({ type: 'noop', frequency: 1000, gain: 0, Q: 1, bypass: false }))
+        const initialSpec = Array.from({ length: 16 }, () => ({
+          type: 'noop',
+          frequency: 1000,
+          gain: 0,
+          Q: 1,
+          bypass: false,
+        }))
         this.weq8 = new WEQ8Runtime(this.audioContext, initialSpec)
         this.analyserNode = this.audioContext.createAnalyser()
         this.analyserNode.fftSize = 8192
@@ -213,7 +228,7 @@ export const useEqualizerStore = defineStore('equalizer', {
           this.playbackOffset = 0
         })
       } else {
-        this.source = null 
+        this.source = null
         if (audioBuffer) {
           this.duration = audioBuffer.duration
         }
@@ -225,7 +240,7 @@ export const useEqualizerStore = defineStore('equalizer', {
         this.filters = this.initializeWithSavedState(savedState)
       } else {
         this.filters = this.initializeFilterPositions()
-        this.syncWeq8Filters() 
+        this.syncWeq8Filters()
       }
 
       return {
@@ -592,7 +607,7 @@ export const useEqualizerStore = defineStore('equalizer', {
 
       this.syncWeq8Filters()
       this.updateState()
-      
+
       // Force immediate save to prevent race conditions during route navigation
       if (this._saveTimeout) {
         clearTimeout(this._saveTimeout)

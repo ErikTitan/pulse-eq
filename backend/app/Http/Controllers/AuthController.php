@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\User;
 use App\Rules\AsciiOnly;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -25,12 +26,11 @@ class AuthController extends Controller
             'password' => Hash::make($request->password),
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
+        event(new Registered($user));
 
         return response()->json([
-            'message' => 'User registered successfully',
-            'user' => $user
+            'message' => 'Registration successful. Please check your email to verify your account.',
+            'user' => $user,
         ], 201);
     }
 
@@ -41,17 +41,28 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
-        if (!Auth::attempt($request->only('email', 'password'), $request->remember)) {
+        if (! Auth::attempt($request->only('email', 'password'), $request->remember)) {
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
+        }
+
+        if (! Auth::user()->hasVerifiedEmail()) {
+            Auth::logout();
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+
+            return response()->json([
+                'message' => 'Please verify your email address to log in.',
+                'needs_verification' => true,
+            ], 403);
         }
 
         $request->session()->regenerate();
 
         return response()->json([
             'message' => 'Login successful',
-            'user' => Auth::user()
+            'user' => Auth::user(),
         ]);
     }
 
@@ -83,7 +94,7 @@ class AuthController extends Controller
 
         return response()->json([
             'message' => 'Profile updated successfully',
-            'user' => $user
+            'user' => $user,
         ]);
     }
 }
